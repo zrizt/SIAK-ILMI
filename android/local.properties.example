@@ -1,0 +1,8 @@
+## Flutter & Android SDK Configuration
+## Copy this file to android/local.properties and adjust the paths to your local system:
+##
+## sdk.dir=C:\\Users\\<YourUsername>\\AppData\\Local\\Android\\Sdk
+## flutter.sdk=C:\\flutter
+## flutter.buildMode=debug
+## flutter.versionName=1.0.0
+## flutter.versionCode=1
