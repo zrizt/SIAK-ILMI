@@ -1,11 +1,15 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/database/tables/siswa_table.dart';
-import '../domain/student_providers.dart';
+import '../../../core/database/app_database.dart';
+import '../../settings/presentation/pin_auth_screen.dart';
+import '../data/dapodik_parser.dart';
 import '../data/student_repository.dart';
-import 'student_form_screen.dart';
+import '../domain/student_providers.dart';
 import 'student_detail_screen.dart';
+import 'student_form_screen.dart';
 
 class StudentListScreen extends ConsumerWidget {
   const StudentListScreen({super.key});
@@ -14,26 +18,30 @@ class StudentListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final filter = ref.watch(studentFilterProvider);
     final studentsAsync = ref.watch(filteredStudentListProvider);
+    final role = ref.watch(authRoleProvider);
+    final isAdmin = role == PinRole.admin;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Data Siswa'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.upload_file),
-            tooltip: 'Import Dapodik',
-            onPressed: () => _showImportDialog(context),
-          ),
-          IconButton(
-            icon: const Icon(Icons.person_add),
-            tooltip: 'Tambah Siswa',
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const StudentFormScreen(siswaId: null),
+          if (isAdmin) ...[
+            IconButton(
+              icon: const Icon(Icons.upload_file),
+              tooltip: 'Import Dapodik',
+              onPressed: () => _showImportDialog(context, ref),
+            ),
+            IconButton(
+              icon: const Icon(Icons.person_add),
+              tooltip: 'Tambah Siswa',
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const StudentFormScreen(siswaId: null),
+                ),
               ),
             ),
-          ),
+          ],
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(96),
@@ -66,38 +74,135 @@ class StudentListScreen extends ConsumerWidget {
     );
   }
 
-  void _showImportDialog(BuildContext context) {
-    showDialog(
+  void _showImportDialog(BuildContext context, WidgetRef ref) {
+    final pathController = TextEditingController();
+    final yearController = TextEditingController(
+      text: DateTime.now().year.toString(),
+    );
+
+    bool isImporting = false;
+    String? errorMessage;
+
+    showDialog<void>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Import Dapodik'),
-        content: const Text(
-          'Pilih file .xlsx atau .csv dari Dapodik.\n\n'
-          'Kolom yang diperlukan:\n'
-          '\u2022 nama / nama_lengkap\n'
-          '\u2022 nisn (opsional)\n'
-          '\u2022 jenis_kelamin (L/P)\n'
-          '\u2022 tingkat / kelas (1-9)\n'
-          '\u2022 no_hp_wali (opsional)',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content:
-                      Text('Pilih file .xlsx atau .csv dari file manager'),
-                ),
-              );
-            },
-            child: const Text('Pilih File'),
-          ),
-        ],
+      builder: (ctx) => StatefulBuilder(
+        builder: (dialogCtx, setDialogState) {
+          return AlertDialog(
+            title: const Text('Import Data Dapodik'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Pilih file .xlsx atau .csv dari penyimpanan internal/Downloads.\n'
+                    'Kolom wajib: Nama, Tingkat (1-9), Jenis Kelamin (L/P).\n'
+                    'Kolom opsional: NISN, Kontak Wali.',
+                    style: TextStyle(fontSize: 13),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: pathController,
+                    decoration: const InputDecoration(
+                      labelText: 'Path File (.xlsx / .csv)',
+                      hintText: '/sdcard/Download/dapodik.xlsx',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: yearController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Tahun Masuk (YY / YYYY)',
+                      hintText: '2026',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  if (errorMessage != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      errorMessage!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                  if (isImporting) ...[
+                    const SizedBox(height: 16),
+                    const Center(child: CircularProgressIndicator()),
+                  ],
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: isImporting ? null : () => Navigator.pop(ctx),
+                child: const Text('Batal'),
+              ),
+              FilledButton(
+                onPressed: isImporting
+                    ? null
+                    : () async {
+                        final rawPath = pathController.text.trim();
+                        final rawYear = int.tryParse(yearController.text.trim()) ??
+                            DateTime.now().year;
+
+                        if (rawPath.isEmpty) {
+                          setDialogState(() {
+                            errorMessage = 'Silakan masukkan path file.';
+                          });
+                          return;
+                        }
+
+                        final file = File(rawPath);
+                        if (!file.existsSync()) {
+                          setDialogState(() {
+                            errorMessage = 'File tidak ditemukan pada path yang diberikan.';
+                          });
+                          return;
+                        }
+
+                        setDialogState(() {
+                          isImporting = true;
+                          errorMessage = null;
+                        });
+
+                        try {
+                          final parser = ref.read(dapodikParserProvider);
+                          final repository = ref.read(studentRepositoryProvider);
+
+                          final result = await parser.parseFile(file, rawYear);
+                          final insertedCount = await repository.bulkImport(
+                            result.rows,
+                            'ADMIN',
+                          );
+
+                          if (ctx.mounted) {
+                            Navigator.pop(ctx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Berhasil mengimpor $insertedCount siswa. '
+                                  '(${result.errorRows.length} baris tidak valid dilewati)',
+                                ),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          setDialogState(() {
+                            isImporting = false;
+                            errorMessage = 'Gagal import: $e';
+                          });
+                        }
+                      },
+                child: const Text('Mulai Import'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -213,9 +318,9 @@ class _StatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.5)),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
       child: Text(
         label,

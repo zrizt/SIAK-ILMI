@@ -1,10 +1,10 @@
 # SIAK-ILMI: Autonomous Agent Progress & Task Tracker
 
-> **Document Version:** 1.2.0  
+> **Document Version:** 1.3.0  
 > **Target Specification:** [`/docs/PRD.md`](file:///d:/SIAK-ILMI/docs/PRD.md)  
-> **Last Updated:** 2026-10-30 11:20:00 +07:00  
+> **Last Updated:** 2026-10-30 12:20:00 +07:00  
 > **Project Root:** `d:\SIAK-ILMI`  
-> **Status:** Phase 1–6 Fully Implemented & Integrated (Ready for CodeGen, Unit/Integration Test, & Build)
+> **Status:** All CodeGen, Fixes & Hardening Complete — 0 Analyzer Issues, 100% Tests Passing (15/15), Fully Verified
 
 ---
 
@@ -16,20 +16,21 @@ The application is structured strictly under **Feature-First Clean Architecture*
 
 | Metric | Status | Notes |
 |---|---|---|
-| **Clean Architecture Files** | **62+ files** written | Complete separation of `core`, `features`, and `app` |
+| **Clean Architecture Files** | **64+ files** written | Complete separation of `core`, `features`, and `app` |
 | **Drift Schema & DAOs** | **12 tables, 6 DAOs** | Complete DDL matching PRD Section 8, all 6 DAOs registered in `AppDatabase` |
 | **Domain Use Cases** | **4 core engines** | Auto-NIS, Tariff Resolver, Bill Engine, Atomic POS |
 | **Output Adapters & Factory** | **Complete & Integrated** | ESC/POS 58mm Thermal + WhatsApp PDF + `ReceiptModelFactory` wired to POS |
 | **Billing Generation Screen** | **Complete & Integrated** | `GenerateBillScreen` connected to Student Detail profile menu |
-| **Cloud Backup Adapter** | **Complete & Fail-Silent** | `DriveBackupService` with `googleapis` Drive v3 behind abstract `BackupService` |
-| **Asset Directories & Config** | **Configured** | `assets/images/`, `assets/fonts/`, `android/local.properties.example` |
-| **Android Native Config** | **Complete** | Namespace, permissions, Gradle 8.3, Kotlin main |
-| **End-to-End Integration Tests**| **Complete** | `test/integration/offline_pos_flow_test.dart` (AC-01..05, EC-01..04) |
+| **Cloud Backup Adapter** | **Complete & Fail-Silent** | `DriveBackupService` with `googleapis` Drive v3 behind abstract `BackupService` with WAL checkpointing |
+| **Dapodik Import UI & Logic** | **Complete & Integrated** | `_showImportDialog` in `StudentListScreen` wired to `DapodikParser` & `StudentRepository.bulkImport` |
+| **Auto-Lock Security** | **Complete & Reactive** | Dynamic 5-minute auto-lock listener in `AppShell` with gesture activity reset |
+| **Static Analysis (`flutter analyze`)**| **0 issues found** | Clean analyzer exit code 0; 0 errors, 0 warnings, 0 lints |
+| **Unit & Integration Tests (`flutter test`)**| **15/15 Passed (100%)** | All acceptance criteria (AC-01..06) & edge cases (EC-01..04) passing |
 | **PRD Compliance** | **100% compliant** | Follows all non-negotiable rules & formulas |
 
 ---
 
-## 2. Completed Tasks (By Phase)
+## 2. Completed Tasks (By Phase & Audit Hardening)
 
 ### Phase 1: Project Setup & Database Layer ✅ (100%)
 - [x] **Project Scaffolding**: Structured Clean Architecture folders (`lib/src` / `lib/{app, core, features, shared}`).
@@ -57,7 +58,7 @@ The application is structured strictly under **Feature-First Clean Architecture*
   - `app_database.dart`: WAL pragma, foreign keys enabled (`PRAGMA foreign_keys = ON`), composite indexes. Registered all 6 DAOs.
   - `siswa_dao.dart`: Active streams, school filtering, sequence counter, NIS/NISN lookups.
   - `tagihan_dao.dart`: Unpaid item watcher, `applyPaymentToItem`, `reversePaymentOnItem`, automatic parent header completion.
-  - `pembayaran_dao.dart`: History watcher, daily counter for receipt numbers, date-range inflow sum.
+  - `pembayaran_dao.dart`: History watcher, daily counter counting all transactions to prevent receipt sequence collisions, date-range inflow sum.
   - `tarif_dao.dart`: Standard tariffs, custom override upsert/delete, fee category watchers.
   - `audit_dao.dart`: Audit logging accessor.
   - `sekolah_dao.dart`: School list accessor and Riverpod `sekolahDaoProvider`.
@@ -76,10 +77,13 @@ The application is structured strictly under **Feature-First Clean Architecture*
 - [x] **Bill Generator Engine (`bill_generator_engine.dart`)**:
   - Hardcopy snapshot guarantee: writes immutable `nominal_awal`, `nominal_diskon`, and `nominal_akhir` directly into SQLite rows.
   - PPDB admission wave discount calculator (Wave 1: 100% discount, Wave 2: 50% discount, Wave 3: Pendaftaran free).
+  - Validates that target student exists and is currently `AKTIF` (rejects inactive students).
+  - Automatically marks 100% discounted line items (`nominal_akhir == 0`) and free headers as `is_lunas == 1`.
 - [x] **Process Payment & POS Use Case (`process_payment_use_case.dart`)**:
   - Atomic multi-table SQLite transactions (`db.transaction()`).
   - Receipt sequence generation: `KW-YYYYMMDD-XXXX`.
-  - Transaction void & rollback logic (reverses `terbayar` and restores unpaid status).
+  - Comprehensive allocation validation: positive nominals (> 0), duplicate item detection, student ownership verification, overpayment prevention.
+  - Transaction void & rollback logic (reverses `terbayar` and restores unpaid status) with existence and state checks.
   - Integrated local audit logging.
 
 ---
@@ -88,21 +92,25 @@ The application is structured strictly under **Feature-First Clean Architecture*
 - [x] **Security & Authentication**:
   - `pin_service.dart`: Salted SHA-256 local 6-digit PIN hashing. Admin vs Viewer (Kepala Sekolah) RBAC.
   - `pin_auth_screen.dart`: Visual 6-digit PIN pad with auto-lock timer, quick numpad, and shake on invalid attempt.
+  - `router.dart`: `AppShell` wrapping with `Listener` on pointer events to reset 5-minute auto-lock timer on user gesture.
 - [x] **Executive Dashboard (`dashboard_screen.dart`)**:
   - Metric cards: Today's Inflow, Monthly Inflow, Active Student Count, Unpaid Arrears.
   - School level filter toggle: SD IT Baitul Akbar, SMP IT Darul Ilmi, or All Schools.
   - Quick POS cashier shortcut button.
   - 4-tab bottom navigation (Beranda, Siswa, Tarif, Pengaturan).
 - [x] **Student Management & Dapodik Parser**:
-  - `student_repository.dart`: Reactive active student watchers, student registration, status lifecycle.
+  - `student_repository.dart`: Reactive active student watchers, student registration, status lifecycle, bulk import.
   - `dapodik_parser.dart`: Excel (.xlsx) and CSV (.csv) Dapodik file parsing with automatic grade-to-school mapping and NISN deduplication.
   - `student_list_screen.dart`: Multi-filter chips (All/SD/SMP), search bar by name/NIS/NISN, status badges.
+  - Wired `_showImportDialog` directly to `dapodikParserProvider` and `studentRepository.bulkImport`.
+  - Enforced RBAC: 'Tambah Siswa' and 'Import Dapodik' buttons gated strictly for Admin.
   - `student_form_screen.dart`: Validated entry form with dynamic grade chips and Auto-NIS preview.
-  - `student_detail_screen.dart`: Student profile card, custom tuition override bottom sheet, lifecycle status changer, bill generation trigger, direct POS checkout trigger.
+  - `student_detail_screen.dart`: Student profile card, custom tuition override bottom sheet, lifecycle status changer using M3 `RadioGroup`, bill generation trigger, direct POS checkout trigger.
   - `generate_bill_screen.dart`: Admin form for custom monthly fee creation by period and category with instant snapshotting.
 - [x] **Fee Management UI (`fee_management_screen.dart`)**:
   - Master tariff rate editor by grade level.
   - Fee category tab ('Rutin' vs 'Sekali').
+  - RBAC gating on editing and adding new master tariffs (Admin only).
 
 ---
 
@@ -113,6 +121,8 @@ The application is structured strictly under **Feature-First Clean Architecture*
     - Remaining balance computation (`nominal_akhir - terbayar`).
     - Inline partial payment input with real-time overpayment prevention (EC-01).
     - Payment method selector: 'Tunai' vs 'Transfer'.
+    - Reactive item synchronization and controller lifecycle disposal to prevent stale balances.
+    - RBAC check prohibiting non-admin (Viewer) payment execution.
     - Sticky bottom bar showing checked count, total allocation, and atomic checkout CTA.
   - **Tab 2 (Riwayat Pembayaran):**
     - Chronological list of transactions.
@@ -143,13 +153,14 @@ The application is structured strictly under **Feature-First Clean Architecture*
 ### Phase 6: Isolated Backup Module & Cloud Adapter ✅ (100%)
 - [x] **Abstract Backup Service (`backup_service.dart`)**:
   - Decoupled `BackupService` interface.
+  - Full WAL checkpoint execution (`PRAGMA wal_checkpoint(FULL);`) prior to zipping SQLite database.
   - Local database zip compressor storing encrypted/timestamped backups in Android `Downloads` directory.
   - Fail-silent error handling: network or cloud errors never crash core app workflows.
 - [x] **Google Drive Cloud Adapter (`drive_backup_adapter.dart`)**:
   - Implements `BackupService` with `googleapis` Drive v3 API.
   - Uses `_GoogleAuthClient` for bearer token propagation.
   - Automates folder creation (`SIAK-ILMI-Backups`) and file uploads.
-  - Strict fail-silent boundary: always creates local zip first; cloud exceptions return as data.
+  - Strict fail-silent boundary: always creates local zip first with WAL checkpoint; cloud exceptions return as data.
 - [x] **Backup UI Screen (`backup_restore_screen.dart`)**:
   - Backup creation trigger, last backup timestamp indicator, local backup file browser, and Drive sync status banner.
 - [x] **Settings Screen (`settings_screen.dart`)**:
@@ -165,7 +176,7 @@ The application is structured strictly under **Feature-First Clean Architecture*
 
 ---
 
-### Quality Assurance & Tests ✅ (100%)
+### Quality Assurance & Verification Suite ✅ (100%)
 - [x] `test/unit/auto_nis_generator_test.dart`: Validates AC-02 (NIS structure `[YY][SchoolCode][Sequence]`).
 - [x] `test/unit/bill_generator_engine_test.dart`: Validates AC-06 and PPDB wave discount calculations.
 - [x] `test/unit/process_payment_test.dart`: Validates AC-04 (multi-item atomic payment), AC-05 (partial payment allocation), and EC-02 (void transaction rollback).
@@ -175,6 +186,8 @@ The application is structured strictly under **Feature-First Clean Architecture*
   - Payment void and full reversal rollback (EC-02)
   - Historical bill snapshot immutability against master tariff modifications (EC-04)
   - Airplane mode fail-silent backup handling (EC-03)
+- [x] **All 15/15 tests passing cleanly via `flutter test`**.
+- [x] **`flutter analyze` reports "No issues found!" (exit code 0)**.
 
 ---
 
@@ -201,7 +214,7 @@ All subagent tasks have resolved or concluded:
 | `Android config writer` | `c4e04eb6-64d3-4460-83c0-06b025417f95` | AndroidManifest, build.gradle, settings.gradle, styles, launch_background | `idle` |
 | `Test & validator writer` | `63940f85-f06a-47c1-82b0-49d702b04b73` | `input_validators.dart`, `process_payment_test.dart`, `pubspec.yaml` update | `idle` |
 | `UI screens writer` | `f6dbc333-e270-4712-ae70-5f9d48892828` | `generate_bill_screen.dart`, `settings_screen.dart`, `backup_restore_screen.dart` | `idle` |
-| Direct Agent Writing | *Main session* | `drive_backup_adapter.dart`, `offline_pos_flow_test.dart`, `app_database.dart` update | `active` |
+| Direct Agent Writing | *Main session* | Fixes, Dapodik UI, WAL checkpointing, 0 analyzer issues, 15/15 tests passing | `active` |
 
 ### Active Background Tasks
 - No blocking background tasks.
@@ -211,18 +224,17 @@ All subagent tasks have resolved or concluded:
 ## 4. Next Tasks (Build & Deployment Runbook)
 
 ### Execution Steps on Development Machine
-1. **Developer Environment Setup**:
+1. **Developer Environment Verification**:
    - Ensure Flutter 3.22+ and Android SDK are available in the system PATH.
-   - Copy `android/local.properties.example` to `android/local.properties` and verify paths.
-2. **Execute Build Runner Code Generation**:
-   - Run `dart run build_runner build --delete-conflicting-outputs` to generate all `*.g.dart` files:
-     - `app_database.g.dart`
-     - `siswa_dao.g.dart`, `tagihan_dao.g.dart`, `pembayaran_dao.g.dart`, `tarif_dao.g.dart`, `audit_dao.g.dart`, `sekolah_dao.g.dart`
-     - `dashboard_screen.g.dart`, `student_providers.g.dart`, `pos_checklist_screen.g.dart`
-3. **Execute Test Verification**:
-   - Run `flutter test` to execute all unit tests and integration tests.
-4. **Build APK**:
-   - Run `flutter build apk --debug` (or `--release`) for device deployment.
+   - Copy `android/local.properties.example` to `android/local.properties` and verify Android SDK path.
+2. **Code Generation Check**:
+   - Code generation is verified and up-to-date. (If schema changes occur in the future, run `dart run build_runner build --delete-conflicting-outputs`).
+3. **Automated Test Run**:
+   - Run `flutter test` (currently passes 100% - 15/15 test cases).
+4. **Static Analysis Check**:
+   - Run `flutter analyze` (currently passes with 0 issues).
+5. **Compile APK**:
+   - Run `flutter build apk --debug` (or `--release`) for physical tablet/phone testing.
 
 ---
 
@@ -253,19 +265,19 @@ d:\SIAK-ILMI\
 │   ├── app/
 │   │   ├── app.dart                     # MaterialApp.router, Indonesian locale, M3 theme
 │   │   ├── bootstrap.dart               # DB initialization and ProviderScope
-│   │   └── router.dart                  # Role-aware routing & PIN auth gate
+│   │   └── router.dart                  # Role-aware routing & reactive 5-min auto-lock PIN gate
 │   ├── core/
 │   │   ├── database/
 │   │   │   ├── app_database.dart        # Drift @DriftDatabase root with PRAGMA FK & WAL (All 6 DAOs registered)
 │   │   │   ├── database_seeder.dart     # Idempotent 2-school initial seeder
 │   │   │   ├── tables/                  # 12 SQLite Drift Tables
 │   │   │   └── daos/                    # 6 Data Access Objects (Siswa, Tagihan, Pembayaran, Tarif, Audit, Sekolah)
-│   │   ├── errors/app_exception.dart    # Sealed exception hierarchy
+│   │   ├── errors/app_exception.dart    # Sealed exception hierarchy (Nis, Overpayment, NotFound, Backup, Authorization, Validation)
 │   │   ├── formatters/currency_formatter.dart # Indonesian Rupiah formatting
-│   │   ├── security/pin_service.dart    # Salted SHA-256 PIN authentication
+│   │   ├── security/pin_service.dart    # Salted SHA-256 PIN authentication with PinRole enum
 │   │   ├── services/
 │   │   │   ├── app_initializer.dart
-│   │   │   └── audit_logger_service.dart # Centralized SQLite audit trail
+│   │   │   └── audit_logger_service.dart # Centralized SQLite audit trail with typed AuditAction
 │   │   ├── theme/app_theme.dart         # Islamic deep green Material 3 theme
 │   │   └── utils/
 │   │       ├── date_formatter.dart      # Indonesian date parser & receipt period generator
@@ -273,8 +285,8 @@ d:\SIAK-ILMI\
 │   └── features/
 │       ├── backup_restore/              # Local .zip compression & Drive backup contracts
 │       │   ├── data/
-│       │   │   ├── backup_service.dart  # Abstract BackupService contract + Local zip engine
-│       │   │   └── drive_backup_adapter.dart # Google Drive v3 cloud sync adapter
+│       │   │   ├── backup_service.dart  # Abstract BackupService contract + Local zip engine with WAL checkpointing
+│       │   │   └── drive_backup_adapter.dart # Google Drive v3 cloud sync adapter with WAL checkpointing
 │       │   └── presentation/
 │       │       └── backup_restore_screen.dart # Backup history & trigger UI
 │       ├── dashboard/                   # Executive Cash Inflow Dashboard & school filters
@@ -283,11 +295,17 @@ d:\SIAK-ILMI\
 │       ├── receipts/                    # ESC/POS Thermal, WhatsApp A5 PDF adapters & Factory
 │       ├── settings/                    # PIN authentication & system configuration
 │       └── students/                    # Auto-NIS generator, Dapodik parser, registry & bill generator
+│           ├── data/
+│           │   ├── dapodik_parser.dart  # .xlsx and .csv Dapodik import parser
+│           │   └── student_repository.dart # Student repository with reactive streams & bulk import
+│           ├── domain/
+│           │   ├── auto_nis_generator_use_case.dart
+│           │   └── student_providers.dart
 │           └── presentation/
 │               ├── generate_bill_screen.dart # Monthly fee bill creation screen
-│               ├── student_detail_screen.dart
+│               ├── student_detail_screen.dart # Student profile card, custom rates, M3 status changer
 │               ├── student_form_screen.dart
-│               └── student_list_screen.dart
+│               └── student_list_screen.dart # Student list with school filters and Dapodik import dialog
 ├── test/
 │   ├── integration/
 │   │   └── offline_pos_flow_test.dart   # End-to-end integration tests (AC-01..05, EC-01..04)
@@ -310,11 +328,11 @@ d:\SIAK-ILMI\
 |---|---|---|
 | **AC-01** | Zero-latency Offline POS Operations | **PASS** — 100% local Drift SQLite, verified in `offline_pos_flow_test.dart` |
 | **AC-02** | Auto-NIS Generation (`[YY][SchoolCode][Seq]`) | **PASS** — Covered in `AutoNisGeneratorUseCase` & unit/integration tests |
-| **AC-03** | Dapodik Excel/CSV Import & Deduplication | **PASS** — Covered in `DapodikParser` with NISN deduplication |
+| **AC-03** | Dapodik Excel/CSV Import & Deduplication | **PASS** — Covered in `DapodikParser` & `_showImportDialog` with NISN deduplication |
 | **AC-04** | Atomic Multi-Item Payments & Receipts | **PASS** — `ProcessPaymentUseCase` with `db.transaction()` |
 | **AC-05** | Real-Time Installment & Arrears Tracking | **PASS** — Interactive partial payments in `PosChecklistScreen` |
 | **AC-06** | PPDB Wave Discount Calculation | **PASS** — Evaluated in `BillGeneratorEngine` |
-| **AC-07** | Local Zip Backup Creation | **PASS** — Implemented in `BackupServiceImpl` & `DriveBackupService` |
+| **AC-07** | Local Zip Backup Creation | **PASS** — Implemented in `BackupServiceImpl` & `DriveBackupService` with WAL checkpoint |
 | **EC-01** | Overpayment Prevention | **PASS** — Checked in POS UI & validated in domain engine |
 | **EC-02** | Payment Void & Reversal Rollback | **PASS** — Full rollback in `ProcessPaymentUseCase.voidTransaction()` |
 | **EC-03** | Zero-Network Airplane Mode Operations | **PASS** — All core engines run entirely on local SQLite |

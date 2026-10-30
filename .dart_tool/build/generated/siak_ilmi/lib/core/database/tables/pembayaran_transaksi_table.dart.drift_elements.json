@@ -1,1 +1,0 @@
-{"valid_import":true,"imports":[{"uri":"package:drift/drift.dart","transitive":false},{"uri":"package:siak_ilmi/core/database/tables/siswa_table.dart","transitive":false}],"elements":[{"kind":"table","name":"pembayaran_transaksi","dart_name":"PembayaranTransaksi"}]}

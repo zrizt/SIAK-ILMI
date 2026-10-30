@@ -6,13 +6,13 @@ import '../../../core/database/app_database.dart';
 import '../../../core/database/daos/pembayaran_dao.dart';
 import '../../../core/database/daos/siswa_dao.dart';
 import '../../../core/database/daos/tagihan_dao.dart';
-import '../../../core/database/tables/siswa_table.dart';
 import '../../../core/formatters/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../backup_restore/presentation/backup_restore_screen.dart';
 import '../../fee_management/presentation/fee_management_screen.dart';
 import '../../settings/presentation/pin_auth_screen.dart';
 import '../../settings/presentation/settings_screen.dart';
+import '../../students/presentation/student_form_screen.dart';
 import '../../students/presentation/student_list_screen.dart';
 
 part 'dashboard_screen.g.dart';
@@ -56,10 +56,12 @@ Future<DashboardMetrics> dashboardMetrics(DashboardMetricsRef ref) async {
   final todayTotal = await pembayaranDao.sumTotalBayarByDateRange(
     startIso: '${todayPrefix}T00:00:00',
     endIso: '${todayPrefix}T23:59:59',
+    sekolahId: sekolahId,
   );
   final monthTotal = await pembayaranDao.sumTotalBayarByDateRange(
     startIso: monthStart,
     endIso: '${todayPrefix}T23:59:59',
+    sekolahId: sekolahId,
   );
 
   int arrears = 0;
@@ -255,7 +257,7 @@ class _DashboardBody extends StatelessWidget {
                                   color: Theme.of(context)
                                       .colorScheme
                                       .onPrimaryContainer
-                                      .withOpacity(0.8),
+                                      .withValues(alpha: 0.8),
                                 ),
                       ),
                     ],

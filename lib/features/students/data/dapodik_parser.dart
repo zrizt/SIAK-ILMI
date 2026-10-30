@@ -3,12 +3,10 @@ import 'package:csv/csv.dart';
 import 'package:excel/excel.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/database/daos/tarif_dao.dart';
-import '../../../core/database/app_database.dart';
 import 'student_repository.dart';
 
 final dapodikParserProvider = Provider<DapodikParser>(
-  (ref) => DapodikParser(TarifDao(ref.watch(appDatabaseProvider))),
+  (ref) => const DapodikParser(),
 );
 
 /// Parse result containing imported rows and skipped duplicates.
@@ -34,8 +32,7 @@ class ParseResult {
 ///
 /// School is resolved from [tingkat]: 1-6 = SD (sekolahId=1), 7-9 = SMP (sekolahId=2)
 class DapodikParser {
-  const DapodikParser(this._tarifDao);
-  final TarifDao _tarifDao;
+  const DapodikParser();
 
   Future<ParseResult> parseFile(File file, int tahunMasuk) async {
     final ext = file.path.split('.').last.toLowerCase();

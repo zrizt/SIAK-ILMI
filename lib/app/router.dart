@@ -12,7 +12,13 @@ class AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final role = ref.watch(authRoleProvider);
-    return role == null ? const PinAuthScreen() : const DashboardScreen();
+    if (role == null) return const PinAuthScreen();
+
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (_) => resetInactivityTimer(ref),
+      child: const DashboardScreen(),
+    );
   }
 }
 

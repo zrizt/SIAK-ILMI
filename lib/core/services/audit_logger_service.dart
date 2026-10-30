@@ -21,6 +21,7 @@ class AuditAction {
   static const insertTagihan = 'INSERT_TAGIHAN';
   static const upsertCustomRate = 'UPSERT_CUSTOM_RATE';
   static const deleteCustomRate = 'DELETE_CUSTOM_RATE';
+  static const insertTarifMaster = 'INSERT_TARIF_MASTER';
   static const updateTarifMaster = 'UPDATE_TARIF_MASTER';
   static const databaseBackup = 'DATABASE_BACKUP';
   static const databaseRestore = 'DATABASE_RESTORE';

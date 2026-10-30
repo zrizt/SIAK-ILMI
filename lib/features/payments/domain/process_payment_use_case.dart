@@ -1,11 +1,8 @@
-import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/database/daos/pembayaran_dao.dart';
 import '../../../core/database/daos/tagihan_dao.dart';
-import '../../../core/database/tables/pembayaran_transaksi_table.dart';
-import '../../../core/database/tables/alokasi_pembayaran_table.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/services/audit_logger_service.dart';
 import '../../../core/utils/date_formatter.dart';
@@ -71,9 +68,45 @@ class ProcessPaymentUseCase {
   /// PRD Non-Negotiable Rule #5: all writes in one db.transaction().
   Future<PaymentResult> execute(ProcessPaymentParams params) async {
     if (params.allocations.isEmpty) {
-      throw const AppException('Tidak ada item yang dipilih untuk pembayaran.');
+      throw const ValidationException('Tidak ada item yang dipilih untuk pembayaran.');
     }
+
     return db.transaction(() async {
+      // 0. Validation: allocations must be positive, no duplicate items, belong to student, no overpayment
+      final seenItemIds = <int>{};
+      for (final allocation in params.allocations) {
+        if (allocation.nominalDialokasikan <= 0) {
+          throw const ValidationException('Nominal pembayaran harus lebih besar dari 0.');
+        }
+        if (!seenItemIds.add(allocation.tagihanItemId)) {
+          throw const ValidationException('Terdapat duplikasi alokasi item tagihan.');
+        }
+
+        final item = await tagihanDao.getItemById(allocation.tagihanItemId);
+        if (item == null) {
+          throw NotFoundException(
+            'Item tagihan #${allocation.tagihanItemId} tidak ditemukan.',
+          );
+        }
+
+        // Verify item belongs to student
+        final header = await (db.select(db.tagihanSiswa)
+              ..where((h) => h.id.equals(item.tagihanId)))
+            .getSingleOrNull();
+        if (header == null || header.siswaId != params.siswaId) {
+          throw const ValidationException(
+            'Item tagihan tidak sesuai dengan siswa yang dipilih.',
+          );
+        }
+
+        final sisa = item.nominalAkhir - item.terbayar;
+        if (allocation.nominalDialokasikan > sisa) {
+          throw ValidationException(
+            'Nominal pembayaran (${allocation.nominalDialokasikan}) melebihi sisa tagihan ($sisa) untuk "${item.namaItem}".',
+          );
+        }
+      }
+
       final now = DateTime.now();
       final nomorKuitansi = await _generateNomorKuitansi(now);
 
@@ -129,6 +162,17 @@ class ProcessPaymentUseCase {
     required String voidedBy,
   }) async {
     await db.transaction(() async {
+      final txn = await (db.select(db.pembayaranTransaksi)
+            ..where((t) => t.id.equals(transaksiId)))
+          .getSingleOrNull();
+
+      if (txn == null) {
+        throw const NotFoundException('Transaksi pembayaran tidak ditemukan.');
+      }
+      if (txn.status == 'VOID') {
+        throw const ValidationException('Transaksi ini sudah berstatus VOID sebelumnya.');
+      }
+
       final allocations =
           await pembayaranDao.getAlokasiByTransaksi(transaksiId);
       for (final alokasi in allocations) {

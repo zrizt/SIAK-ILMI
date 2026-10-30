@@ -63,7 +63,7 @@ class ThermalPrinterAdapter {
       // Build ESC/POS byte commands
       final profile = await CapabilityProfile.load();
       final generator = Generator(PaperSize.mm58, profile);
-      final List<int> bytes = [];
+      List<int> bytes = [];
 
       // ── Header ──────────────────────────────────────────
       bytes += generator.text(
@@ -166,8 +166,7 @@ class ThermalPrinterAdapter {
       );
       bytes += generator.text(
         'Dokumen sah \u2014 SIAK-ILMI',
-        styles: const PosStyles(
-            align: PosAlign.center, italic: true),
+        styles: const PosStyles(align: PosAlign.center),
       );
       bytes += generator.feed(3);
       bytes += generator.cut();

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/security/pin_service.dart';
 import '../../backup_restore/data/backup_service.dart';
 import '../../backup_restore/presentation/backup_restore_screen.dart';
 import '../../receipts/data/thermal_printer_adapter.dart';

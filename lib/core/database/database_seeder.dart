@@ -2,11 +2,6 @@ import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app_database.dart';
-import 'tables/sekolah_table.dart';
-import 'tables/tahun_ajaran_table.dart';
-import 'tables/kelas_table.dart';
-import 'tables/kategori_biaya_table.dart';
-import 'tables/tarif_master_table.dart';
 
 /// Riverpod provider for the [DatabaseSeeder].
 final databaseSeederProvider = Provider<DatabaseSeeder>(
@@ -28,10 +23,10 @@ class DatabaseSeeder {
 
   Future<void> seedIfEmpty() async {
     final sekolahCountExpr = _db.sekolah.id.count();
-    final sekolahCountQuery = selectOnly(_db.sekolah)
+    final sekolahCountQuery = _db.selectOnly(_db.sekolah)
       ..addColumns([sekolahCountExpr]);
     final sekolahCountRow = await sekolahCountQuery.getSingle();
-    final sekolahCount = sekolahCountRow?.read(sekolahCountExpr) ?? 0;
+    final sekolahCount = sekolahCountRow.read(sekolahCountExpr) ?? 0;
 
     if (sekolahCount > 0) return; // Already seeded
 

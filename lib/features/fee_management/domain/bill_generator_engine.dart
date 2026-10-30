@@ -1,14 +1,11 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/database/daos/siswa_dao.dart';
 import '../../../core/database/daos/tagihan_dao.dart';
 import '../../../core/database/daos/tarif_dao.dart';
-import '../../../core/database/tables/tagihan_siswa_table.dart';
-import '../../../core/database/tables/tagihan_item_table.dart';
-import '../../../core/database/tables/kategori_biaya_table.dart';
 import '../../../core/errors/app_exception.dart';
-import '../../../core/utils/date_formatter.dart';
 import 'tariff_resolver_use_case.dart';
 
 final billGeneratorEngineProvider = Provider<BillGeneratorEngine>(
@@ -78,6 +75,17 @@ class BillGeneratorEngine {
     required String periode,
     required List<BillLineItemParam> items,
   }) async {
+    // 0. Enforce PRD rule: inactive students cannot receive new bills
+    final student = await siswaDao.getById(siswaId);
+    if (student == null) {
+      throw const NotFoundException('Data siswa tidak ditemukan.');
+    }
+    if (student.status != 'AKTIF') {
+      throw const ValidationException(
+        'Tagihan hanya dapat dibuat untuk siswa yang berstatus AKTIF.',
+      );
+    }
+
     return db.transaction(() async {
       // 1. Create the tagihan_siswa header.
       final tagihanId = await tagihanDao.insertTagihanSiswa(
@@ -88,6 +96,7 @@ class BillGeneratorEngine {
       );
 
       final itemIds = <int>[];
+      bool allItemsLunas = true;
 
       // 2. For each line item, resolve the effective tariff and snapshot.
       for (final param in items) {
@@ -101,21 +110,34 @@ class BillGeneratorEngine {
         final nominalDiskon = param.nominalDiskon;
         // PRD Formula: nominal_akhir = max(0, nominalAwal - nominalDiskon)
         final nominalAkhir = (nominalAwal - nominalDiskon).clamp(0, nominalAwal);
+        final isFree = nominalAkhir == 0;
+        if (!isFree) {
+          allItemsLunas = false;
+        }
 
         // 3. Write the SNAPSHOTTED values directly into tagihan_item.
         //    These values are IMMUTABLE after this write.
+        //    If nominalAkhir == 0, mark as lunas immediately.
         final itemId = await tagihanDao.insertTagihanItem(
           TagihanItemCompanion.insert(
             tagihanId: tagihanId,
             kategoriBiayaId: param.kategoriBiayaId,
             namaItem: param.namaItem,
             nominalAwal: nominalAwal,
-            nominalDiskon: nominalDiskon,
+            nominalDiskon: Value(nominalDiskon),
             nominalAkhir: nominalAkhir,
+            isLunas: Value(isFree ? 1 : 0),
           ),
         );
 
         itemIds.add(itemId);
+      }
+
+      // If all items are 100% discounted (e.g. Wave 1 full scholarship), mark header as lunas
+      if (items.isNotEmpty && allItemsLunas) {
+        await (db.update(db.tagihanSiswa)
+              ..where((t) => t.id.equals(tagihanId)))
+            .write(const TagihanSiswaCompanion(isLunas: Value(1)));
       }
 
       return BillGenerationResult(

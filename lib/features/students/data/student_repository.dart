@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/database/daos/siswa_dao.dart';
-import '../../../core/database/daos/audit_dao.dart';
-import '../../../core/database/tables/siswa_table.dart';
 import '../../../core/services/audit_logger_service.dart';
 import '../domain/auto_nis_generator_use_case.dart';
 

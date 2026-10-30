@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -8,10 +8,6 @@ import 'package:siak_ilmi/core/database/daos/siswa_dao.dart';
 import 'package:siak_ilmi/core/database/daos/tagihan_dao.dart';
 import 'package:siak_ilmi/core/database/daos/pembayaran_dao.dart';
 import 'package:siak_ilmi/core/database/daos/tarif_dao.dart';
-import 'package:siak_ilmi/core/database/daos/audit_dao.dart';
-import 'package:siak_ilmi/core/database/tables/siswa_table.dart';
-import 'package:siak_ilmi/core/database/tables/tagihan_item_table.dart';
-import 'package:siak_ilmi/core/database/tables/tarif_master_table.dart';
 import 'package:siak_ilmi/core/services/audit_logger_service.dart';
 import 'package:siak_ilmi/features/students/domain/auto_nis_generator_use_case.dart';
 import 'package:siak_ilmi/features/fee_management/domain/tariff_resolver_use_case.dart';
@@ -42,7 +38,7 @@ void main() {
       tagihanDao = TagihanDao(db);
       pembayaranDao = PembayaranDao(db);
       tarifDao = TarifDao(db);
-      auditLogger = AuditLoggerService(AuditDao(db));
+      auditLogger = AuditLoggerService(db);
 
       nisGenerator = AutoNisGeneratorUseCase(siswaDao);
       tariffResolver = TariffResolverUseCase(tarifDao);

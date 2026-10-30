@@ -6,7 +6,7 @@ part of 'dashboard_screen.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$dashboardMetricsHash() => r'dee295d078ae91c46feb8a504e0daa515852ecbf';
+String _$dashboardMetricsHash() => r'54179fc41f14795c98f42f4512a4c95ecdb2a46c';
 
 /// See also [dashboardMetrics].
 @ProviderFor(dashboardMetrics)

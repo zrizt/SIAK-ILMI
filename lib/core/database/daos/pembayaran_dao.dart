@@ -46,14 +46,14 @@ class PembayaranDao extends DatabaseAccessor<AppDatabase>
             ..where((t) => t.nomorKuitansi.equals(nomor)))
           .getSingleOrNull();
 
-  /// Returns the count of today's VALID transactions for nomor_kuitansi generation.
+  /// Returns the count of today's transactions for nomor_kuitansi generation.
+  /// Counts all transactions (both VALID and VOID) to prevent receipt number collision.
   Future<int> countTransaksiToday(String datePrefix) async {
     final countExpr = pembayaranTransaksi.id.count();
     final query = selectOnly(pembayaranTransaksi)
       ..addColumns([countExpr])
       ..where(
-        pembayaranTransaksi.tanggalBayar.like('$datePrefix%') &
-            pembayaranTransaksi.status.equals('VALID'),
+        pembayaranTransaksi.tanggalBayar.like('$datePrefix%'),
       );
     final result = await query.getSingle();
     return result.read(countExpr) ?? 0;
@@ -73,8 +73,11 @@ class PembayaranDao extends DatabaseAccessor<AppDatabase>
         pembayaranTransaksi.status.equals('VALID');
 
     if (sekolahId != null) {
-      // Join with siswa to filter by school
-      // Simplified: use a subquery via siswaId filtering at domain layer.
+      final siswaSubquery = db.selectOnly(db.siswa)
+        ..addColumns([db.siswa.id])
+        ..where(db.siswa.sekolahId.equals(sekolahId));
+      whereClause = whereClause &
+          pembayaranTransaksi.siswaId.isInQuery(siswaSubquery);
     }
 
     final query = selectOnly(pembayaranTransaksi)

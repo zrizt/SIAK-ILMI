@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/database/daos/pembayaran_dao.dart';
 import '../../../core/database/daos/siswa_dao.dart';
-import '../../../core/database/tables/pembayaran_transaksi_table.dart';
 import '../domain/receipt_model.dart';
 
 final receiptModelFactoryProvider = Provider<ReceiptModelFactory>(

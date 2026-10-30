@@ -1,12 +1,13 @@
 import 'dart:io';
 
 import 'package:archive/archive_io.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import '../../../core/database/app_database.dart';
 import '../../../core/errors/app_exception.dart';
+import 'drive_backup_adapter.dart';
 
 // ── Abstract BackupService interface ──────────────────────────────────────
 
@@ -39,20 +40,21 @@ class BackupResult {
 
 // ── Provider ───────────────────────────────────────────────────────────────
 
-/// Provides the concrete [BackupServiceImpl] as [BackupService].
-/// Google Drive adapter is disabled by default — set [driveEnabled] = true
-/// after configuring OAuth in Phase 6.
+/// Provides the concrete [BackupService] backed by [DriveBackupService].
+/// Google Drive sync is attempted fail-silently while always guaranteeing
+/// local .zip creation.
 final backupServiceProvider = Provider<BackupService>(
-  (ref) => BackupServiceImpl(driveEnabled: false),
+  (ref) => ref.watch(driveBackupServiceProvider),
 );
 
 // ── Local-only Backup Implementation ──────────────────────────────────────
 
 class BackupServiceImpl implements BackupService {
-  const BackupServiceImpl({this.driveEnabled = false});
+  const BackupServiceImpl({this.driveEnabled = false, this.db});
 
   /// Set to true when Drive OAuth is configured (Phase 6).
   final bool driveEnabled;
+  final AppDatabase? db;
 
   @override
   Future<BackupResult> performBackup() async {
@@ -108,6 +110,12 @@ class BackupServiceImpl implements BackupService {
   /// Compresses the SQLite database file into a .zip archive in
   /// Android's Downloads-equivalent directory.
   Future<String> _createLocalZip() async {
+    if (db != null) {
+      try {
+        await db!.customStatement('PRAGMA wal_checkpoint(FULL);');
+      } catch (_) {}
+    }
+
     final docsDir = await getApplicationDocumentsDirectory();
     final dbFile = File(p.join(docsDir.path, 'siak_ilmi.db'));
 

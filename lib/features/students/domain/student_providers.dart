@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../core/database/tables/siswa_table.dart';
+import '../../../core/database/app_database.dart';
 import '../data/student_repository.dart';
 
 part 'student_providers.g.dart';

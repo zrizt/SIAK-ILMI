@@ -6,13 +6,8 @@ import 'package:siak_ilmi/core/database/database_seeder.dart';
 import 'package:siak_ilmi/core/database/daos/siswa_dao.dart';
 import 'package:siak_ilmi/core/database/daos/tagihan_dao.dart';
 import 'package:siak_ilmi/core/database/daos/pembayaran_dao.dart';
-import 'package:siak_ilmi/core/database/daos/audit_dao.dart';
-import 'package:siak_ilmi/core/database/tables/tagihan_siswa_table.dart';
-import 'package:siak_ilmi/core/database/tables/tagihan_item_table.dart';
-import 'package:siak_ilmi/core/database/tables/siswa_table.dart';
 import 'package:siak_ilmi/core/services/audit_logger_service.dart';
 import 'package:siak_ilmi/features/payments/domain/process_payment_use_case.dart';
-import 'package:drift/drift.dart';
 
 AppDatabase buildTestDb() => AppDatabase(NativeDatabase.memory());
 

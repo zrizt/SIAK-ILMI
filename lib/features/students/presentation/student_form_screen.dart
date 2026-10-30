@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/database/tables/siswa_table.dart';
 import '../data/student_repository.dart';
-import '../domain/student_providers.dart';
 
 class StudentFormScreen extends ConsumerStatefulWidget {
   const StudentFormScreen({super.key, this.siswaId});

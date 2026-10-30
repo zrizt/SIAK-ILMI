@@ -3,12 +3,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/security/pin_service.dart';
+export '../../../core/security/pin_service.dart';
 
 /// Provider holding the currently authenticated role (null = unauthenticated)
 final authRoleProvider = StateProvider<PinRole?>((ref) => null);
 
 /// Inactivity timer for auto-lock (5 minutes per PRD Section 4.2)
 final inactivityTimerProvider = StateProvider<Timer?>((ref) => null);
+
+/// Resets the 5-minute auto-lock inactivity timer.
+void resetInactivityTimer(WidgetRef ref) {
+  if (ref.read(authRoleProvider) == null) return;
+  ref.read(inactivityTimerProvider.notifier).state?.cancel();
+  ref.read(inactivityTimerProvider.notifier).state = Timer(
+    const Duration(minutes: 5),
+    () {
+      ref.read(authRoleProvider.notifier).state = null;
+    },
+  );
+}
 
 class PinAuthScreen extends ConsumerStatefulWidget {
   const PinAuthScreen({super.key});
@@ -45,14 +58,7 @@ class _PinAuthScreenState extends ConsumerState<PinAuthScreen> {
 
     if (role != null) {
       ref.read(authRoleProvider.notifier).state = role;
-      // Start inactivity timer
-      ref.read(inactivityTimerProvider.notifier).state?.cancel();
-      ref.read(inactivityTimerProvider.notifier).state = Timer(
-        const Duration(minutes: 5),
-        () {
-          ref.read(authRoleProvider.notifier).state = null;
-        },
-      );
+      resetInactivityTimer(ref);
     } else {
       setState(() {
         _pin.clear();

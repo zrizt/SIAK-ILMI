@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../core/database/app_database.dart';
 import '../core/services/app_initializer.dart';
 import 'app.dart';
 

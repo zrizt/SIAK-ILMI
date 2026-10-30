@@ -1,1 +1,0 @@
-{"valid_import":true,"imports":[{"uri":"package:drift/drift.dart","transitive":false},{"uri":"package:siak_ilmi/core/database/tables/pembayaran_transaksi_table.dart","transitive":false},{"uri":"package:siak_ilmi/core/database/tables/tagihan_item_table.dart","transitive":false}],"elements":[{"kind":"table","name":"alokasi_pembayaran","dart_name":"AlokasiPembayaran"}]}

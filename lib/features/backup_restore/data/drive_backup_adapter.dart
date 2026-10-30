@@ -10,6 +10,7 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import '../../../core/database/app_database.dart';
 import '../../../core/errors/app_exception.dart';
 import 'backup_service.dart';
 
@@ -20,7 +21,7 @@ import 'backup_service.dart';
 /// Provider yang mengekspos [DriveBackupService] sebagai [BackupService].
 /// Gunakan provider ini setelah OAuth dikonfigurasi di aplikasi.
 final driveBackupServiceProvider = Provider<BackupService>(
-  (ref) => DriveBackupService(),
+  (ref) => DriveBackupService(db: ref.watch(appDatabaseProvider)),
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -61,10 +62,16 @@ class _GoogleAuthClient extends http.BaseClient {
 ///
 /// Semua error cloud ditangkap secara silent — TIDAK PERNAH melempar exception.
 class DriveBackupService implements BackupService {
-  DriveBackupService()
-      : _googleSignIn = GoogleSignIn(
-          scopes: [drive.DriveApi.driveFileScope],
-        );
+  DriveBackupService({
+    AppDatabase? db,
+    GoogleSignIn? googleSignIn,
+  })  : _db = db,
+        _googleSignIn = googleSignIn ??
+            GoogleSignIn(
+              scopes: [drive.DriveApi.driveFileScope],
+            );
+
+  final AppDatabase? _db;
 
   /// Instance Google Sign-In dengan scope Drive File.
   final GoogleSignIn _googleSignIn;
@@ -124,6 +131,12 @@ class DriveBackupService implements BackupService {
   /// Mengompres file SQLite database ke dalam arsip .zip di direktori backup.
   /// Melempar [BackupException] jika file database tidak ditemukan.
   Future<String> _createLocalZip() async {
+    if (_db != null) {
+      try {
+        await _db.customStatement('PRAGMA wal_checkpoint(FULL);');
+      } catch (_) {}
+    }
+
     final docsDir = await getApplicationDocumentsDirectory();
     final dbFile = File(p.join(docsDir.path, 'siak_ilmi.db'));
 
@@ -242,7 +255,7 @@ Future<String> _getOrCreateDriveFolder(
   final query =
       "mimeType='application/vnd.google-apps.folder' "
       "and name='$folderName' "
-      "and trashed=false";
+      'and trashed=false';
 
   final result = await api.files.list(
     q: query,

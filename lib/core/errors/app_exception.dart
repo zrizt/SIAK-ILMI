@@ -7,6 +7,11 @@ sealed class AppException implements Exception {
   String toString() => 'AppException: $message';
 }
 
+/// Thrown when an input or business validation fails.
+final class ValidationException extends AppException {
+  const ValidationException(super.message);
+}
+
 /// Thrown when NIS generation fails (e.g., sequence > 999).
 final class NisGenerationException extends AppException {
   const NisGenerationException(super.message);

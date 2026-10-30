@@ -1,11 +1,9 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/database/daos/tarif_dao.dart';
-import '../../../core/database/tables/tarif_master_table.dart';
-import '../../../core/database/tables/skema_pembayaran_siswa_table.dart';
-import '../../../core/database/tables/kategori_biaya_table.dart';
 import '../../../core/formatters/currency_formatter.dart';
 import '../../../core/services/audit_logger_service.dart';
 import '../../settings/presentation/pin_auth_screen.dart';
@@ -31,6 +29,9 @@ class FeeManagementScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final role = ref.watch(authRoleProvider);
+    final isAdmin = role == PinRole.admin;
+
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -49,11 +50,13 @@ class FeeManagementScreen extends ConsumerWidget {
             _KategoriBiayaTab(),
           ],
         ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => _showAddTarifDialog(context, ref),
-          icon: const Icon(Icons.add),
-          label: const Text('Tarif Baru'),
-        ),
+        floatingActionButton: isAdmin
+            ? FloatingActionButton.extended(
+                onPressed: () => _showAddTarifDialog(context, ref),
+                icon: const Icon(Icons.add),
+                label: const Text('Tarif Baru'),
+              )
+            : null,
       ),
     );
   }
@@ -165,10 +168,21 @@ class _TarifKategoriCard extends StatelessWidget {
                 CurrencyFormatter.format(t.nominal),
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
-              onTap: () => showDialog(
-                context: context,
-                builder: (_) => _EditTarifDialog(tarifData: t, ref: ref),
-              ),
+              onTap: () {
+                final currentRole = ref.read(authRoleProvider);
+                if (currentRole != PinRole.admin) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Akses ditolak: Hanya Admin yang dapat mengubah tarif.'),
+                    ),
+                  );
+                  return;
+                }
+                showDialog(
+                  context: context,
+                  builder: (_) => _EditTarifDialog(tarifData: t, ref: ref),
+                );
+              },
             ),
           ),
         ],
@@ -217,6 +231,8 @@ class _EditTarifDialog extends StatefulWidget {
 
 class _EditTarifDialogState extends State<_EditTarifDialog> {
   final _nominalCtrl = TextEditingController();
+  int _selectedKategoriId = 1;
+  int _selectedTingkat = 1;
   bool _isSaving = false;
 
   @override
@@ -224,6 +240,8 @@ class _EditTarifDialogState extends State<_EditTarifDialog> {
     super.initState();
     if (widget.tarifData != null) {
       _nominalCtrl.text = widget.tarifData!.nominal.toString();
+      _selectedKategoriId = widget.tarifData!.kategoriBiayaId;
+      _selectedTingkat = widget.tarifData!.tingkat;
     }
   }
 
@@ -264,6 +282,22 @@ class _EditTarifDialogState extends State<_EditTarifDialog> {
           entityId: widget.tarifData!.id,
           details: 'Nominal diubah menjadi $nominal',
         );
+      } else {
+        await dao.upsertTarifMaster(
+          TarifMasterCompanion.insert(
+            kategoriBiayaId: _selectedKategoriId,
+            tingkat: _selectedTingkat,
+            nominal: nominal,
+          ),
+        );
+        await auditLogger.log(
+          userRole: role?.displayName ?? 'Admin',
+          actionType: AuditAction.insertTarifMaster,
+          entityAffected: 'tarif_master',
+          entityId: 0,
+          details:
+              'Tarif baru dibuat: Kategori $_selectedKategoriId, Tingkat $_selectedTingkat, Nominal $nominal',
+        );
       }
       if (mounted) Navigator.pop(context);
     } catch (e) {
@@ -279,19 +313,64 @@ class _EditTarifDialogState extends State<_EditTarifDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isNew = widget.tarifData == null;
+    final kategoriAsync = widget.ref.watch(allKategoriProvider);
+
     return AlertDialog(
       title: Text(
-        widget.tarifData != null
-            ? 'Edit Tarif Kelas ${widget.tarifData!.tingkat}'
-            : 'Tambah Tarif Baru',
+        isNew
+            ? 'Tambah Tarif Baru'
+            : 'Edit Tarif Kelas ${widget.tarifData!.tingkat}',
       ),
-      content: TextField(
-        controller: _nominalCtrl,
-        decoration: const InputDecoration(
-          labelText: 'Nominal (IDR)',
-          prefixText: 'Rp ',
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isNew) ...[
+              kategoriAsync.when(
+                data: (kategoris) => DropdownButtonFormField<int>(
+                  initialValue: _selectedKategoriId,
+                  decoration: const InputDecoration(labelText: 'Kategori Biaya'),
+                  items: kategoris
+                      .map((k) => DropdownMenuItem(
+                            value: k.id,
+                            child: Text(k.namaBiaya),
+                          ))
+                      .toList(),
+                  onChanged: (val) {
+                    if (val != null) setState(() => _selectedKategoriId = val);
+                  },
+                ),
+                loading: () => const LinearProgressIndicator(),
+                error: (_, __) => const SizedBox(),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<int>(
+                initialValue: _selectedTingkat,
+                decoration: const InputDecoration(labelText: 'Tingkat / Kelas'),
+                items: List.generate(
+                  9,
+                  (i) => DropdownMenuItem(
+                    value: i + 1,
+                    child: Text('Kelas ${i + 1} (${i < 6 ? "SD" : "SMP"})'),
+                  ),
+                ),
+                onChanged: (val) {
+                  if (val != null) setState(() => _selectedTingkat = val);
+                },
+              ),
+              const SizedBox(height: 12),
+            ],
+            TextField(
+              controller: _nominalCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Nominal (IDR)',
+                prefixText: 'Rp ',
+              ),
+              keyboardType: TextInputType.number,
+            ),
+          ],
         ),
-        keyboardType: TextInputType.number,
       ),
       actions: [
         TextButton(

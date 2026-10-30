@@ -3,18 +3,14 @@ import 'package:crypto/crypto.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// PIN role identifiers matching PRD Section 4.2.
-enum PinRole { admin, viewer }
+enum PinRole {
+  admin('Admin', 'pin_hash_admin'),
+  viewer('Kepala Sekolah', 'pin_hash_viewer');
 
-/// Extension to convert role to display string.
-extension PinRoleDisplay on PinRole {
-  String get displayName => switch (this) {
-        PinRole.admin => 'Admin',
-        PinRole.viewer => 'Kepala Sekolah',
-      };
-  String get prefKey => switch (this) {
-        PinRole.admin => 'pin_hash_admin',
-        PinRole.viewer => 'pin_hash_viewer',
-      };
+  const PinRole(this.displayName, this.prefKey);
+
+  final String displayName;
+  final String prefKey;
 }
 
 /// Manages local 6-digit PIN authentication.

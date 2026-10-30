@@ -1,12 +1,10 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/database/daos/siswa_dao.dart';
 import '../../../core/database/daos/tarif_dao.dart';
-import '../../../core/database/tables/siswa_table.dart';
-import '../../../core/database/tables/skema_pembayaran_siswa_table.dart';
-import '../../../core/database/tables/kategori_biaya_table.dart';
 import '../../../core/formatters/currency_formatter.dart';
 import '../../../core/services/audit_logger_service.dart';
 import '../../payments/presentation/pos_checklist_screen.dart';
@@ -271,7 +269,7 @@ class _InfoChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -478,7 +476,7 @@ class _CustomRateBottomSheetState extends State<_CustomRateBottomSheet> {
           const SizedBox(height: 16),
           DropdownButtonFormField<int>(
             decoration: const InputDecoration(labelText: 'Kategori Biaya'),
-            value: _selectedKategoriId,
+            initialValue: _selectedKategoriId,
             items: _kategoris
                 .map((k) => DropdownMenuItem(
                       value: k.id,
@@ -571,18 +569,22 @@ class _ChangeStatusDialogState extends State<_ChangeStatusDialog> {
     const statuses = ['AKTIF', 'LULUS', 'PINDAH', 'DROP_OUT'];
     return AlertDialog(
       title: const Text('Ubah Status Siswa'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: statuses
-            .map(
-              (s) => RadioListTile<String>(
-                title: Text(s),
-                value: s,
-                groupValue: _selected,
-                onChanged: (v) => setState(() => _selected = v!),
-              ),
-            )
-            .toList(),
+      content: RadioGroup<String>(
+        groupValue: _selected,
+        onChanged: (v) {
+          if (v != null) setState(() => _selected = v);
+        },
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: statuses
+              .map(
+                (s) => RadioListTile<String>(
+                  title: Text(s),
+                  value: s,
+                ),
+              )
+              .toList(),
+        ),
       ),
       actions: [
         TextButton(

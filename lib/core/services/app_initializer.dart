@@ -1,5 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../../core/database/app_database.dart';
 import '../../core/database/database_seeder.dart';
 import '../../core/security/pin_service.dart';

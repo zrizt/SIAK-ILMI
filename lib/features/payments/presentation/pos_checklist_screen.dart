@@ -7,11 +7,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/database/daos/tagihan_dao.dart';
 import '../../../core/database/daos/pembayaran_dao.dart';
 import '../../../core/database/daos/siswa_dao.dart';
-import '../../../core/database/tables/tagihan_item_table.dart';
-import '../../../core/database/tables/pembayaran_transaksi_table.dart';
-import '../../../core/database/tables/siswa_table.dart';
 import '../../../core/formatters/currency_formatter.dart';
-import '../../../core/services/audit_logger_service.dart';
 import '../../receipts/data/receipt_model_factory.dart';
 import '../../receipts/presentation/receipt_actions_sheet.dart';
 import '../../settings/presentation/pin_auth_screen.dart';
@@ -59,7 +55,7 @@ class ChecklistItem {
           text: partialAmount?.toString() ?? '',
         );
 
-  final TagihanItemData item;
+  TagihanItemData item;
   bool isChecked;
   bool isPartial = false;
   final TextEditingController partialAmountCtrl;
@@ -115,18 +111,48 @@ class _PosChecklistScreenState extends ConsumerState<PosChecklistScreen>
       _checklistItems.fold(0, (sum, i) => sum + i.allocatedAmount);
 
   void _syncChecklistItems(List<TagihanItemData> items) {
-    // Add new items not yet in the checklist
+    final incomingIds = items.map((i) => i.id).toSet();
+    final itemsMap = {for (final i in items) i.id: i};
+
+    // Dispose and remove items that are no longer unpaid
+    _checklistItems.removeWhere((c) {
+      if (!incomingIds.contains(c.item.id)) {
+        c.dispose();
+        return true;
+      }
+      return false;
+    });
+
+    // Update existing items with fresh data
+    for (final c in _checklistItems) {
+      final fresh = itemsMap[c.item.id];
+      if (fresh != null) {
+        c.item = fresh;
+      }
+    }
+
+    // Add brand-new items
+    final existingIds = _checklistItems.map((c) => c.item.id).toSet();
     for (final item in items) {
-      if (!_checklistItems.any((c) => c.item.id == item.id)) {
+      if (!existingIds.contains(item.id)) {
         _checklistItems.add(ChecklistItem(item: item));
       }
     }
-    // Remove items that are now paid
-    _checklistItems.removeWhere(
-        (c) => !items.any((i) => i.id == c.item.id));
   }
 
   Future<void> _confirmPayment() async {
+    final role = ref.read(authRoleProvider);
+    if (role != PinRole.admin) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Akses ditolak: Hanya Admin yang dapat memproses pembayaran.',
+          ),
+        ),
+      );
+      return;
+    }
+
     final checkedItems =
         _checklistItems.where((i) => i.isChecked).toList();
     if (checkedItems.isEmpty) {
@@ -492,7 +518,7 @@ class _PaymentSummaryBar extends StatelessWidget {
         color: Theme.of(context).colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 8,
             offset: const Offset(0, -2),
           ),
