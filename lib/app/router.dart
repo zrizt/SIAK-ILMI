@@ -27,18 +27,18 @@ class AppShell extends ConsumerWidget {
 /// This will be replaced with go_router in a future phase.
 final appRouter = RouterConfig<Object>(
   routerDelegate: _AppRouterDelegate(),
-  routeInformationParser: _AppRouteParser(),
+  // routeInformationParser: _AppRouteParser(),
   backButtonDispatcher: RootBackButtonDispatcher(),
 );
 
-class _AppRouteParser extends RouteInformationParser<Object> {
-  @override
-  Future<Object> parseRouteInformation(RouteInformation info) async =>
-      info.uri;
-  @override
-  RouteInformation? restoreRouteInformation(Object c) =>
-      RouteInformation(uri: c as Uri);
-}
+// class _AppRouteParser extends RouteInformationParser<Object> {
+//   @override
+//   Future<Object> parseRouteInformation(RouteInformation info) async =>
+//       info.uri;
+//   @override
+//   RouteInformation? restoreRouteInformation(Object c) =>
+//       RouteInformation(uri: c as Uri);
+// }
 
 class _AppRouterDelegate extends RouterDelegate<Object>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<Object> {
