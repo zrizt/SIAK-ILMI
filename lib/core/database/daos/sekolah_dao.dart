@@ -1,9 +1,15 @@
 import 'package:drift/drift.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app_database.dart';
 import '../tables/sekolah_table.dart';
 
 part 'sekolah_dao.g.dart';
+
+/// Riverpod provider for [SekolahDao].
+final sekolahDaoProvider = Provider<SekolahDao>(
+  (ref) => SekolahDao(ref.watch(appDatabaseProvider)),
+);
 
 @DriftAccessor(tables: [Sekolah])
 class SekolahDao extends DatabaseAccessor<AppDatabase> with _$SekolahDaoMixin {

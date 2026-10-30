@@ -1,0 +1,171 @@
+{
+  "elements": {
+    "AppDatabase": {
+      "id": {
+        "library_uri": "package:siak_ilmi/core/database/app_database.dart",
+        "name": "AppDatabase"
+      },
+      "declaration": {
+        "source_uri": "package:siak_ilmi/core/database/app_database.dart",
+        "offset": 1662,
+        "name": "AppDatabase"
+      },
+      "references": [
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/sekolah_table.dart",
+          "name": "sekolah"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/tahun_ajaran_table.dart",
+          "name": "tahun_ajaran"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/kelas_table.dart",
+          "name": "kelas"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/kategori_biaya_table.dart",
+          "name": "kategori_biaya"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/siswa_table.dart",
+          "name": "siswa"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/tarif_master_table.dart",
+          "name": "tarif_master"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/skema_pembayaran_siswa_table.dart",
+          "name": "skema_pembayaran_siswa"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/tagihan_siswa_table.dart",
+          "name": "tagihan_siswa"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/tagihan_item_table.dart",
+          "name": "tagihan_item"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/pembayaran_transaksi_table.dart",
+          "name": "pembayaran_transaksi"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/alokasi_pembayaran_table.dart",
+          "name": "alokasi_pembayaran"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/audit_log_table.dart",
+          "name": "audit_log"
+        }
+      ],
+      "type": "database",
+      "tables": [
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/sekolah_table.dart",
+          "name": "sekolah"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/tahun_ajaran_table.dart",
+          "name": "tahun_ajaran"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/kelas_table.dart",
+          "name": "kelas"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/kategori_biaya_table.dart",
+          "name": "kategori_biaya"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/siswa_table.dart",
+          "name": "siswa"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/tarif_master_table.dart",
+          "name": "tarif_master"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/skema_pembayaran_siswa_table.dart",
+          "name": "skema_pembayaran_siswa"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/tagihan_siswa_table.dart",
+          "name": "tagihan_siswa"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/tagihan_item_table.dart",
+          "name": "tagihan_item"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/pembayaran_transaksi_table.dart",
+          "name": "pembayaran_transaksi"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/alokasi_pembayaran_table.dart",
+          "name": "alokasi_pembayaran"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/audit_log_table.dart",
+          "name": "audit_log"
+        }
+      ],
+      "views": [],
+      "includes": [],
+      "queries": [],
+      "schema_version": 1,
+      "daos": [
+        {
+          "library_uri": "package:siak_ilmi/core/database/daos/siswa_dao.dart",
+          "name": "SiswaDao"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/daos/tagihan_dao.dart",
+          "name": "TagihanDao"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/daos/pembayaran_dao.dart",
+          "name": "PembayaranDao"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/daos/tarif_dao.dart",
+          "name": "TarifDao"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/daos/audit_dao.dart",
+          "name": "AuditDao"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/daos/sekolah_dao.dart",
+          "name": "SekolahDao"
+        }
+      ]
+    }
+  },
+  "imports": [
+    "package:drift/drift.dart",
+    "package:drift/native.dart",
+    "package:flutter_riverpod/flutter_riverpod.dart",
+    "package:path/path.dart",
+    "package:path_provider/path_provider.dart",
+    "package:siak_ilmi/core/database/daos/audit_dao.dart",
+    "package:siak_ilmi/core/database/daos/pembayaran_dao.dart",
+    "package:siak_ilmi/core/database/daos/sekolah_dao.dart",
+    "package:siak_ilmi/core/database/daos/siswa_dao.dart",
+    "package:siak_ilmi/core/database/daos/tagihan_dao.dart",
+    "package:siak_ilmi/core/database/daos/tarif_dao.dart",
+    "package:siak_ilmi/core/database/tables/alokasi_pembayaran_table.dart",
+    "package:siak_ilmi/core/database/tables/audit_log_table.dart",
+    "package:siak_ilmi/core/database/tables/kategori_biaya_table.dart",
+    "package:siak_ilmi/core/database/tables/kelas_table.dart",
+    "package:siak_ilmi/core/database/tables/pembayaran_transaksi_table.dart",
+    "package:siak_ilmi/core/database/tables/sekolah_table.dart",
+    "package:siak_ilmi/core/database/tables/siswa_table.dart",
+    "package:siak_ilmi/core/database/tables/skema_pembayaran_siswa_table.dart",
+    "package:siak_ilmi/core/database/tables/tagihan_item_table.dart",
+    "package:siak_ilmi/core/database/tables/tagihan_siswa_table.dart",
+    "package:siak_ilmi/core/database/tables/tahun_ajaran_table.dart",
+    "package:siak_ilmi/core/database/tables/tarif_master_table.dart"
+  ]
+}

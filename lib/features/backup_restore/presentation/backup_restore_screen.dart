@@ -1,9 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
 
 import '../data/backup_service.dart';
-import '../../settings/presentation/pin_auth_screen.dart';
 
+/// Backup & Restore management screen.
+/// Allows administrators to trigger manual database exports to zip
+/// and monitor Google Drive sync status.
 class BackupRestoreScreen extends ConsumerStatefulWidget {
   const BackupRestoreScreen({super.key});
 
@@ -15,71 +20,175 @@ class BackupRestoreScreen extends ConsumerStatefulWidget {
 class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
   bool _isBackingUp = false;
   BackupResult? _lastResult;
-  String? _lastLocalPath;
+  String? _existingBackupPath;
+  DateTime? _existingBackupTimestamp;
 
   @override
   void initState() {
     super.initState();
-    _loadLastBackupPath();
+    _loadExistingBackup();
   }
 
-  Future<void> _loadLastBackupPath() async {
+  Future<void> _loadExistingBackup() async {
     final service = ref.read(backupServiceProvider);
     final path = await service.getLocalBackupPath();
-    if (mounted) setState(() => _lastLocalPath = path);
-  }
-
-  Future<void> _startBackup() async {
-    setState(() => _isBackingUp = true);
-    try {
-      final service = ref.read(backupServiceProvider);
-      final result = await service.performBackup();
-      if (mounted) {
-        setState(() {
-          _lastResult = result;
-          _lastLocalPath = result.localZipPath;
-          _isBackingUp = false;
-        });
-        _showResultSnackbar(result);
+    if (path != null && mounted) {
+      final file = File(path);
+      DateTime? timestamp;
+      if (await file.exists()) {
+        try {
+          timestamp = await file.lastModified();
+        } catch (_) {}
       }
-    } catch (e) {
-      // Should never reach here (fail-silent), but guard defensively
-      if (mounted) {
-        setState(() => _isBackingUp = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Backup error: $e')),
-        );
-      }
+      setState(() {
+        _existingBackupPath = path;
+        _existingBackupTimestamp = timestamp;
+      });
     }
   }
 
-  void _showResultSnackbar(BackupResult result) {
-    final msg = result.cloudUploaded
-        ? 'Backup selesai & berhasil diupload ke Google Drive'
-        : 'Backup lokal berhasil disimpan. ${result.cloudError ?? ''}';
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor:
-            result.cloudUploaded ? Colors.green : Colors.orange.shade700,
-        duration: const Duration(seconds: 4),
+  Future<void> _performBackup() async {
+    setState(() => _isBackingUp = true);
+
+    try {
+      final service = ref.read(backupServiceProvider);
+      final result = await service.performBackup();
+
+      DateTime? timestamp;
+      if (result.hasLocalBackup) {
+        final file = File(result.localZipPath);
+        if (await file.exists()) {
+          try {
+            timestamp = await file.lastModified();
+          } catch (_) {}
+        }
+      }
+      timestamp ??= DateTime.now();
+
+      if (!mounted) return;
+
+      setState(() {
+        _lastResult = result;
+        _existingBackupPath = result.localZipPath;
+        _existingBackupTimestamp = timestamp;
+        _isBackingUp = false;
+      });
+
+      _showResultDialog(result);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isBackingUp = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Terjadi kesalahan saat backup: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
+  }
+
+  void _showResultDialog(BackupResult result) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              result.hasLocalBackup
+                  ? Icons.check_circle_outline
+                  : Icons.error_outline,
+              color: result.hasLocalBackup ? Colors.green : Colors.red,
+            ),
+            const SizedBox(width: 8),
+            const Text('Detail Hasil Backup'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              result.hasLocalBackup
+                  ? 'Backup data berhasil dibuat dan diamankan.'
+                  : 'Gagal membuat backup data lokal.',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            if (result.hasLocalBackup) ...[
+              const Text(
+                'Lokasi Arsip:',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 4),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Theme.of(ctx).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  result.localZipPath,
+                  style: Theme.of(ctx).textTheme.bodySmall,
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            const Text(
+              'Status Cloud (Google Drive):',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              result.cloudUploaded
+                  ? 'Berhasil diunggah ke Google Drive'
+                  : (result.cloudError ?? 'Google Drive belum tersambung'),
+              style: TextStyle(
+                color: result.cloudUploaded ? Colors.green : Colors.orange,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK'),
+          ),
+        ],
       ),
     );
   }
 
+  String _formatDateTime(DateTime dt) {
+    final d = dt.day.toString().padLeft(2, '0');
+    final m = dt.month.toString().padLeft(2, '0');
+    final y = dt.year.toString();
+    final h = dt.hour.toString().padLeft(2, '0');
+    final min = dt.minute.toString().padLeft(2, '0');
+    final s = dt.second.toString().padLeft(2, '0');
+    return '$d/$m/$y $h:$min:$s';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final role = ref.watch(authRoleProvider);
-    final isAdmin = role?.name == 'admin';
+    final theme = Theme.of(context);
+    final hasBackup =
+        _existingBackupPath != null && _existingBackupPath!.isNotEmpty;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Backup & Restore')),
+      appBar: AppBar(
+        title: const Text('Backup & Restore'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Status card
+          // ── Info Card (Last Backup) ──────────────────────────────
           Card(
-            color: Theme.of(context).colorScheme.primaryContainer,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              side: BorderSide(color: theme.colorScheme.outlineVariant),
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -88,63 +197,61 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                   Row(
                     children: [
                       Icon(
-                        Icons.backup,
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        hasBackup
+                            ? Icons.inventory_2_outlined
+                            : Icons.info_outline,
+                        color: hasBackup
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.outline,
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Status Backup',
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium
-                            ?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onPrimaryContainer,
-                              fontWeight: FontWeight.bold,
-                            ),
+                        'Informasi Backup Terakhir',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  if (_lastLocalPath != null) ...[
-                    Row(
-                      children: [
-                        const Icon(Icons.folder_zip, size: 18),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            _lastLocalPath!.split('/').last,
-                            style: Theme.of(context).textTheme.bodySmall,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
+                  if (hasBackup) ...[
+                    Text(
+                      'Nama File: ${p.basename(_existingBackupPath!)}',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ] else
-                    const Text('Belum ada backup lokal'),
-                  if (_lastResult != null) ...[
                     const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Icon(
-                          _lastResult!.cloudUploaded
-                              ? Icons.cloud_done
-                              : Icons.cloud_off,
-                          size: 16,
-                          color: _lastResult!.cloudUploaded
-                              ? Colors.green
-                              : Colors.orange,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          _lastResult!.cloudUploaded
-                              ? 'Tersinkron ke Google Drive'
-                              : 'Google Drive: ${_lastResult!.cloudError ?? "Tidak aktif"}',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
+                    Text(
+                      'Lokasi File:',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.outline,
+                      ),
                     ),
+                    const SizedBox(height: 4),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color:
+                            theme.colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        _existingBackupPath!,
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (_existingBackupTimestamp != null)
+                      Text(
+                        'Waktu: ${_formatDateTime(_existingBackupTimestamp!)}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                  ] else ...[
+                    const Text('Belum ada backup'),
                   ],
                 ],
               ),
@@ -152,94 +259,94 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
           ),
           const SizedBox(height: 16),
 
-          // Backup action
-          if (isAdmin) ...[
-            FilledButton.icon(
-              onPressed: _isBackingUp ? null : _startBackup,
-              icon: _isBackingUp
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.backup),
-              label: Text(_isBackingUp
-                  ? 'Membuat backup...'
-                  : 'Buat Backup Sekarang'),
+          // ── Action Button ────────────────────────────────────────
+          FilledButton.icon(
+            onPressed: _isBackingUp ? null : _performBackup,
+            icon: _isBackingUp
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.backup),
+            label: Text(
+              _isBackingUp ? 'Memproses Backup...' : 'Buat Backup Sekarang',
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: _isBackingUp ? null : _loadLastBackupPath,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Refresh Status'),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(50),
             ),
-          ] else
-            const Card(
-              child: ListTile(
-                leading: Icon(Icons.lock_outline),
-                title: Text('Hanya Admin yang dapat memulai backup'),
+          ),
+          const SizedBox(height: 16),
+
+          // ── Info Banner ──────────────────────────────────────────
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.secondaryContainer
+                  .withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: theme.colorScheme.secondary
+                    .withValues(alpha: 0.3),
               ),
             ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: theme.colorScheme.secondary,
+                  size: 22,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Google Drive sync belum dikonfigurasi. Backup tersimpan di folder Download perangkat.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSecondaryContainer,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
 
-          const SizedBox(height: 24),
-
-          // Info section
+          // ── Cloud Status Tile ────────────────────────────────────
           Card(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Informasi Backup',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleSmall
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  const _InfoRow(
-                    icon: Icons.storage,
-                    text: 'Database SQLite dikompres menjadi file .zip',
-                  ),
-                  const _InfoRow(
-                    icon: Icons.folder,
-                    text: 'Disimpan di folder Download/SIAK-ILMI-Backup',
-                  ),
-                  const _InfoRow(
-                    icon: Icons.cloud_outlined,
-                    text:
-                        'Upload Google Drive opsional (akan aktif di Fase 6)',
-                  ),
-                  const _InfoRow(
-                    icon: Icons.offline_bolt,
-                    text: 'Backup lokal selalu berhasil tanpa internet',
-                  ),
-                ],
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              side: BorderSide(color: theme.colorScheme.outlineVariant),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: ListTile(
+              leading: Icon(
+                _lastResult == null
+                    ? Icons.cloud_queue
+                    : (_lastResult!.cloudUploaded
+                        ? Icons.cloud_done
+                        : Icons.cloud_off),
+                color: _lastResult == null
+                    ? theme.colorScheme.outline
+                    : (_lastResult!.cloudUploaded
+                        ? Colors.green
+                        : Colors.orange),
+              ),
+              title: const Text('Status Sinkronisasi Cloud'),
+              subtitle: Text(
+                _lastResult == null
+                    ? 'Belum ada proses backup pada sesi ini'
+                    : (_lastResult!.cloudUploaded
+                        ? 'Tersinkronisasi ke Google Drive'
+                        : (_lastResult!.cloudError ??
+                            'Sinkronisasi cloud belum aktif')),
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.icon, required this.text});
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 8),
-          Expanded(child: Text(text, style: Theme.of(context).textTheme.bodySmall)),
         ],
       ),
     );

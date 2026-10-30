@@ -11,6 +11,7 @@ import 'package:path_provider/path_provider.dart';
 
 import 'daos/audit_dao.dart';
 import 'daos/pembayaran_dao.dart';
+import 'daos/sekolah_dao.dart';
 import 'daos/siswa_dao.dart';
 import 'daos/tagihan_dao.dart';
 import 'daos/tarif_dao.dart';
@@ -56,6 +57,7 @@ final appDatabaseProvider = Provider<AppDatabase>(
     PembayaranDao,
     TarifDao,
     AuditDao,
+    SekolahDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {

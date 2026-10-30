@@ -37,9 +37,13 @@ class PinService {
       final salt = DateTime.now().millisecondsSinceEpoch.toString();
       await prefs.setString(_saltKey, salt);
       await prefs.setString(
-          PinRole.admin.prefKey, _hash(_defaultAdminPin, salt));
+        PinRole.admin.prefKey,
+        _hash(_defaultAdminPin, salt),
+      );
       await prefs.setString(
-          PinRole.viewer.prefKey, _hash(_defaultViewerPin, salt));
+        PinRole.viewer.prefKey,
+        _hash(_defaultViewerPin, salt),
+      );
     }
   }
 
@@ -72,5 +76,12 @@ class PinService {
     final salt = prefs.getString(_saltKey) ?? '';
     await prefs.setString(targetRole.prefKey, _hash(newPin, salt));
     return true;
+  }
+
+  /// Sets the PIN for a given [role] directly.
+  static Future<bool> setPin(PinRole role, String newPin) async {
+    final prefs = await SharedPreferences.getInstance();
+    final salt = prefs.getString(_saltKey) ?? '';
+    return prefs.setString(role.prefKey, _hash(newPin, salt));
   }
 }

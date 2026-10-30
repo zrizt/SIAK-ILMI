@@ -1,0 +1,1 @@
+{"valid_import":true,"imports":[{"uri":"package:drift/drift.dart","transitive":false},{"uri":"package:siak_ilmi/core/database/tables/sekolah_table.dart","transitive":false}],"elements":[{"kind":"table","name":"kelas","dart_name":"Kelas"}]}

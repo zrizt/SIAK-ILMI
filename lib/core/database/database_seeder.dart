@@ -1,12 +1,12 @@
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../app_database.dart';
-import '../tables/sekolah_table.dart';
-import '../tables/tahun_ajaran_table.dart';
-import '../tables/kelas_table.dart';
-import '../tables/kategori_biaya_table.dart';
-import '../tables/tarif_master_table.dart';
+import 'app_database.dart';
+import 'tables/sekolah_table.dart';
+import 'tables/tahun_ajaran_table.dart';
+import 'tables/kelas_table.dart';
+import 'tables/kategori_biaya_table.dart';
+import 'tables/tarif_master_table.dart';
 
 /// Riverpod provider for the [DatabaseSeeder].
 final databaseSeederProvider = Provider<DatabaseSeeder>(
@@ -27,7 +27,12 @@ class DatabaseSeeder {
   final AppDatabase _db;
 
   Future<void> seedIfEmpty() async {
-    final sekolahCount = await _db.sekolah.count().getSingle();
+    final sekolahCountExpr = _db.sekolah.id.count();
+    final sekolahCountQuery = selectOnly(_db.sekolah)
+      ..addColumns([sekolahCountExpr]);
+    final sekolahCountRow = await sekolahCountQuery.getSingle();
+    final sekolahCount = sekolahCountRow?.read(sekolahCountExpr) ?? 0;
+
     if (sekolahCount > 0) return; // Already seeded
 
     await _db.transaction(() async {

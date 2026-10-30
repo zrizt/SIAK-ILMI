@@ -11,6 +11,7 @@ import '../../../core/formatters/currency_formatter.dart';
 import '../../../core/services/audit_logger_service.dart';
 import '../../payments/presentation/pos_checklist_screen.dart';
 import '../../settings/presentation/pin_auth_screen.dart';
+import 'generate_bill_screen.dart';
 
 /// Student Detail Screen — shows profile info and launches POS cashier
 class StudentDetailScreen extends ConsumerWidget {
@@ -66,6 +67,14 @@ class _StudentDetailBody extends ConsumerWidget {
                   child: ListTile(
                     leading: Icon(Icons.tune),
                     title: Text('Atur Tarif Kustom'),
+                    dense: true,
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'generate_bill',
+                  child: ListTile(
+                    leading: Icon(Icons.receipt_long),
+                    title: Text('Buat Tagihan'),
                     dense: true,
                   ),
                 ),
@@ -232,6 +241,16 @@ class _StudentDetailBody extends ConsumerWidget {
         );
       case 'change_status':
         _showChangeStatusDialog(context, ref);
+      case 'generate_bill':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => GenerateBillScreen(
+              siswaId: siswa.id,
+              tingkat: siswa.kelasId, // kelasId = tingkat (seeded as 1-9)
+            ),
+          ),
+        );
     }
   }
 

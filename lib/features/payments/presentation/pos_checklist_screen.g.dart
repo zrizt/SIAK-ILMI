@@ -1,0 +1,423 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'pos_checklist_screen.dart';
+
+// **************************************************************************
+// RiverpodGenerator
+// **************************************************************************
+
+String _$unpaidItemsHash() => r'eb1a8d59d45858c5b9b9f2ac0cc07f627da01648';
+
+/// Copied from Dart SDK
+class _SystemHash {
+  _SystemHash._();
+
+  static int combine(int hash, int value) {
+    // ignore: parameter_assignments
+    hash = 0x1fffffff & (hash + value);
+    // ignore: parameter_assignments
+    hash = 0x1fffffff & (hash + ((0x0007ffff & hash) << 10));
+    return hash ^ (hash >> 6);
+  }
+
+  static int finish(int hash) {
+    // ignore: parameter_assignments
+    hash = 0x1fffffff & (hash + ((0x03ffffff & hash) << 3));
+    // ignore: parameter_assignments
+    hash = hash ^ (hash >> 11);
+    return 0x1fffffff & (hash + ((0x00003fff & hash) << 15));
+  }
+}
+
+/// See also [unpaidItems].
+@ProviderFor(unpaidItems)
+const unpaidItemsProvider = UnpaidItemsFamily();
+
+/// See also [unpaidItems].
+class UnpaidItemsFamily extends Family<AsyncValue<List<TagihanItemData>>> {
+  /// See also [unpaidItems].
+  const UnpaidItemsFamily();
+
+  /// See also [unpaidItems].
+  UnpaidItemsProvider call(
+    int siswaId,
+  ) {
+    return UnpaidItemsProvider(
+      siswaId,
+    );
+  }
+
+  @override
+  UnpaidItemsProvider getProviderOverride(
+    covariant UnpaidItemsProvider provider,
+  ) {
+    return call(
+      provider.siswaId,
+    );
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'unpaidItemsProvider';
+}
+
+/// See also [unpaidItems].
+class UnpaidItemsProvider
+    extends AutoDisposeStreamProvider<List<TagihanItemData>> {
+  /// See also [unpaidItems].
+  UnpaidItemsProvider(
+    int siswaId,
+  ) : this._internal(
+          (ref) => unpaidItems(
+            ref as UnpaidItemsRef,
+            siswaId,
+          ),
+          from: unpaidItemsProvider,
+          name: r'unpaidItemsProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$unpaidItemsHash,
+          dependencies: UnpaidItemsFamily._dependencies,
+          allTransitiveDependencies:
+              UnpaidItemsFamily._allTransitiveDependencies,
+          siswaId: siswaId,
+        );
+
+  UnpaidItemsProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.siswaId,
+  }) : super.internal();
+
+  final int siswaId;
+
+  @override
+  Override overrideWith(
+    Stream<List<TagihanItemData>> Function(UnpaidItemsRef provider) create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: UnpaidItemsProvider._internal(
+        (ref) => create(ref as UnpaidItemsRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        siswaId: siswaId,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeStreamProviderElement<List<TagihanItemData>> createElement() {
+    return _UnpaidItemsProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is UnpaidItemsProvider && other.siswaId == siswaId;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, siswaId.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+mixin UnpaidItemsRef on AutoDisposeStreamProviderRef<List<TagihanItemData>> {
+  /// The parameter `siswaId` of this provider.
+  int get siswaId;
+}
+
+class _UnpaidItemsProviderElement
+    extends AutoDisposeStreamProviderElement<List<TagihanItemData>>
+    with UnpaidItemsRef {
+  _UnpaidItemsProviderElement(super.provider);
+
+  @override
+  int get siswaId => (origin as UnpaidItemsProvider).siswaId;
+}
+
+String _$paymentHistoryHash() => r'01cfcd4e9ad6cf60354eef9db01d88af1df21e48';
+
+/// See also [paymentHistory].
+@ProviderFor(paymentHistory)
+const paymentHistoryProvider = PaymentHistoryFamily();
+
+/// See also [paymentHistory].
+class PaymentHistoryFamily
+    extends Family<AsyncValue<List<PembayaranTransaksiData>>> {
+  /// See also [paymentHistory].
+  const PaymentHistoryFamily();
+
+  /// See also [paymentHistory].
+  PaymentHistoryProvider call(
+    int siswaId,
+  ) {
+    return PaymentHistoryProvider(
+      siswaId,
+    );
+  }
+
+  @override
+  PaymentHistoryProvider getProviderOverride(
+    covariant PaymentHistoryProvider provider,
+  ) {
+    return call(
+      provider.siswaId,
+    );
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'paymentHistoryProvider';
+}
+
+/// See also [paymentHistory].
+class PaymentHistoryProvider
+    extends AutoDisposeStreamProvider<List<PembayaranTransaksiData>> {
+  /// See also [paymentHistory].
+  PaymentHistoryProvider(
+    int siswaId,
+  ) : this._internal(
+          (ref) => paymentHistory(
+            ref as PaymentHistoryRef,
+            siswaId,
+          ),
+          from: paymentHistoryProvider,
+          name: r'paymentHistoryProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$paymentHistoryHash,
+          dependencies: PaymentHistoryFamily._dependencies,
+          allTransitiveDependencies:
+              PaymentHistoryFamily._allTransitiveDependencies,
+          siswaId: siswaId,
+        );
+
+  PaymentHistoryProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.siswaId,
+  }) : super.internal();
+
+  final int siswaId;
+
+  @override
+  Override overrideWith(
+    Stream<List<PembayaranTransaksiData>> Function(PaymentHistoryRef provider)
+        create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: PaymentHistoryProvider._internal(
+        (ref) => create(ref as PaymentHistoryRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        siswaId: siswaId,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeStreamProviderElement<List<PembayaranTransaksiData>>
+      createElement() {
+    return _PaymentHistoryProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is PaymentHistoryProvider && other.siswaId == siswaId;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, siswaId.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+mixin PaymentHistoryRef
+    on AutoDisposeStreamProviderRef<List<PembayaranTransaksiData>> {
+  /// The parameter `siswaId` of this provider.
+  int get siswaId;
+}
+
+class _PaymentHistoryProviderElement
+    extends AutoDisposeStreamProviderElement<List<PembayaranTransaksiData>>
+    with PaymentHistoryRef {
+  _PaymentHistoryProviderElement(super.provider);
+
+  @override
+  int get siswaId => (origin as PaymentHistoryProvider).siswaId;
+}
+
+String _$posStudentDataHash() => r'c67d1bc385330673a6eb981f6b0ef5d32a162a59';
+
+/// See also [posStudentData].
+@ProviderFor(posStudentData)
+const posStudentDataProvider = PosStudentDataFamily();
+
+/// See also [posStudentData].
+class PosStudentDataFamily extends Family<AsyncValue<SiswaData?>> {
+  /// See also [posStudentData].
+  const PosStudentDataFamily();
+
+  /// See also [posStudentData].
+  PosStudentDataProvider call(
+    int siswaId,
+  ) {
+    return PosStudentDataProvider(
+      siswaId,
+    );
+  }
+
+  @override
+  PosStudentDataProvider getProviderOverride(
+    covariant PosStudentDataProvider provider,
+  ) {
+    return call(
+      provider.siswaId,
+    );
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'posStudentDataProvider';
+}
+
+/// See also [posStudentData].
+class PosStudentDataProvider extends AutoDisposeFutureProvider<SiswaData?> {
+  /// See also [posStudentData].
+  PosStudentDataProvider(
+    int siswaId,
+  ) : this._internal(
+          (ref) => posStudentData(
+            ref as PosStudentDataRef,
+            siswaId,
+          ),
+          from: posStudentDataProvider,
+          name: r'posStudentDataProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$posStudentDataHash,
+          dependencies: PosStudentDataFamily._dependencies,
+          allTransitiveDependencies:
+              PosStudentDataFamily._allTransitiveDependencies,
+          siswaId: siswaId,
+        );
+
+  PosStudentDataProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.siswaId,
+  }) : super.internal();
+
+  final int siswaId;
+
+  @override
+  Override overrideWith(
+    FutureOr<SiswaData?> Function(PosStudentDataRef provider) create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: PosStudentDataProvider._internal(
+        (ref) => create(ref as PosStudentDataRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        siswaId: siswaId,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<SiswaData?> createElement() {
+    return _PosStudentDataProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is PosStudentDataProvider && other.siswaId == siswaId;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, siswaId.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+mixin PosStudentDataRef on AutoDisposeFutureProviderRef<SiswaData?> {
+  /// The parameter `siswaId` of this provider.
+  int get siswaId;
+}
+
+class _PosStudentDataProviderElement
+    extends AutoDisposeFutureProviderElement<SiswaData?>
+    with PosStudentDataRef {
+  _PosStudentDataProviderElement(super.provider);
+
+  @override
+  int get siswaId => (origin as PosStudentDataProvider).siswaId;
+}
+// ignore_for_file: type=lint
+// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

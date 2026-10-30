@@ -1,0 +1,70 @@
+{
+  "elements": {
+    "TagihanDao": {
+      "id": {
+        "library_uri": "package:siak_ilmi/core/database/daos/tagihan_dao.dart",
+        "name": "TagihanDao"
+      },
+      "declaration": {
+        "source_uri": "package:siak_ilmi/core/database/daos/tagihan_dao.dart",
+        "offset": 304,
+        "name": "TagihanDao"
+      },
+      "references": [
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/tagihan_siswa_table.dart",
+          "name": "tagihan_siswa"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/tagihan_item_table.dart",
+          "name": "tagihan_item"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/kategori_biaya_table.dart",
+          "name": "kategori_biaya"
+        }
+      ],
+      "type": "dao",
+      "tables": [
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/tagihan_siswa_table.dart",
+          "name": "tagihan_siswa"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/tagihan_item_table.dart",
+          "name": "tagihan_item"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/kategori_biaya_table.dart",
+          "name": "kategori_biaya"
+        }
+      ],
+      "views": [],
+      "includes": [],
+      "queries": [],
+      "dart_type": {
+        "elements": [
+          {
+            "lexeme": "TagihanDao",
+            "import_uri": "package:siak_ilmi/core/database/daos/tagihan_dao.dart"
+          }
+        ]
+      },
+      "database": {
+        "elements": [
+          {
+            "lexeme": "AppDatabase",
+            "import_uri": "package:siak_ilmi/core/database/app_database.dart"
+          }
+        ]
+      }
+    }
+  },
+  "imports": [
+    "package:drift/drift.dart",
+    "package:siak_ilmi/core/database/app_database.dart",
+    "package:siak_ilmi/core/database/tables/tagihan_siswa_table.dart",
+    "package:siak_ilmi/core/database/tables/tagihan_item_table.dart",
+    "package:siak_ilmi/core/database/tables/kategori_biaya_table.dart"
+  ]
+}

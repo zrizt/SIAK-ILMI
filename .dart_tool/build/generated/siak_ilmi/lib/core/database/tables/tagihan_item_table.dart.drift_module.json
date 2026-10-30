@@ -1,0 +1,295 @@
+{
+  "elements": {
+    "tagihan_item": {
+      "id": {
+        "library_uri": "package:siak_ilmi/core/database/tables/tagihan_item_table.dart",
+        "name": "tagihan_item"
+      },
+      "declaration": {
+        "source_uri": "package:siak_ilmi/core/database/tables/tagihan_item_table.dart",
+        "offset": 147,
+        "name": "TagihanItem"
+      },
+      "references": [
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/tagihan_siswa_table.dart",
+          "name": "tagihan_siswa"
+        },
+        {
+          "library_uri": "package:siak_ilmi/core/database/tables/kategori_biaya_table.dart",
+          "name": "kategori_biaya"
+        }
+      ],
+      "type": "table",
+      "columns": [
+        {
+          "sqlType": {
+            "builtin": "int"
+          },
+          "nullable": false,
+          "nameInSql": "id",
+          "nameInDart": "id",
+          "declaration": {
+            "source_uri": "package:siak_ilmi/core/database/tables/tagihan_item_table.dart",
+            "offset": 191,
+            "name": "id"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": null,
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [
+            {
+              "type": "primary",
+              "is_auto_increment": true
+            }
+          ],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "int"
+          },
+          "nullable": false,
+          "nameInSql": "tagihan_id",
+          "nameInDart": "tagihanId",
+          "declaration": {
+            "source_uri": "package:siak_ilmi/core/database/tables/tagihan_item_table.dart",
+            "offset": 242,
+            "name": "tagihanId"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": null,
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [
+            {
+              "type": "foreign_key",
+              "column": {
+                "table": {
+                  "library_uri": "package:siak_ilmi/core/database/tables/tagihan_siswa_table.dart",
+                  "name": "tagihan_siswa"
+                },
+                "name": "id"
+              },
+              "onUpdate": null,
+              "onDelete": "cascade",
+              "initiallyDeferred": false
+            }
+          ],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "int"
+          },
+          "nullable": false,
+          "nameInSql": "kategori_biaya_id",
+          "nameInDart": "kategoriBiayaId",
+          "declaration": {
+            "source_uri": "package:siak_ilmi/core/database/tables/tagihan_item_table.dart",
+            "offset": 349,
+            "name": "kategoriBiayaId"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": null,
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [
+            {
+              "type": "foreign_key",
+              "column": {
+                "table": {
+                  "library_uri": "package:siak_ilmi/core/database/tables/kategori_biaya_table.dart",
+                  "name": "kategori_biaya"
+                },
+                "name": "id"
+              },
+              "onUpdate": null,
+              "onDelete": "restrict",
+              "initiallyDeferred": false
+            }
+          ],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "string"
+          },
+          "nullable": false,
+          "nameInSql": "nama_item",
+          "nameInDart": "namaItem",
+          "declaration": {
+            "source_uri": "package:siak_ilmi/core/database/tables/tagihan_item_table.dart",
+            "offset": 465,
+            "name": "namaItem"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": null,
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "int"
+          },
+          "nullable": false,
+          "nameInSql": "nominal_awal",
+          "nameInDart": "nominalAwal",
+          "declaration": {
+            "source_uri": "package:siak_ilmi/core/database/tables/tagihan_item_table.dart",
+            "offset": 545,
+            "name": "nominalAwal"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": null,
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "int"
+          },
+          "nullable": false,
+          "nameInSql": "nominal_diskon",
+          "nameInDart": "nominalDiskon",
+          "declaration": {
+            "source_uri": "package:siak_ilmi/core/database/tables/tagihan_item_table.dart",
+            "offset": 615,
+            "name": "nominalDiskon"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": {
+            "elements": [
+              "const ",
+              {
+                "lexeme": "Constant",
+                "import_uri": "package:drift/src/runtime/query_builder/query_builder.dart"
+              },
+              "(0)"
+            ]
+          },
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "int"
+          },
+          "nullable": false,
+          "nameInSql": "nominal_akhir",
+          "nameInDart": "nominalAkhir",
+          "declaration": {
+            "source_uri": "package:siak_ilmi/core/database/tables/tagihan_item_table.dart",
+            "offset": 722,
+            "name": "nominalAkhir"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": null,
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "int"
+          },
+          "nullable": false,
+          "nameInSql": "terbayar",
+          "nameInDart": "terbayar",
+          "declaration": {
+            "source_uri": "package:siak_ilmi/core/database/tables/tagihan_item_table.dart",
+            "offset": 808,
+            "name": "terbayar"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": {
+            "elements": [
+              "const ",
+              {
+                "lexeme": "Constant",
+                "import_uri": "package:drift/src/runtime/query_builder/query_builder.dart"
+              },
+              "(0)"
+            ]
+          },
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "int"
+          },
+          "nullable": false,
+          "nameInSql": "is_lunas",
+          "nameInDart": "isLunas",
+          "declaration": {
+            "source_uri": "package:siak_ilmi/core/database/tables/tagihan_item_table.dart",
+            "offset": 913,
+            "name": "isLunas"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": {
+            "elements": [
+              "const ",
+              {
+                "lexeme": "Constant",
+                "import_uri": "package:drift/src/runtime/query_builder/query_builder.dart"
+              },
+              "(0)"
+            ]
+          },
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        }
+      ],
+      "existing_data_class": null,
+      "table_constraints": [],
+      "custom_parent_class": null,
+      "interfaces_for_row_class": [],
+      "fixed_entity_info_name": null,
+      "base_dart_name": "TagihanItem",
+      "row_class_name": "TagihanItemData",
+      "companion_class_name": null,
+      "without_rowid": false,
+      "strict": false,
+      "write_default_constraints": true,
+      "custom_constraints": [],
+      "attached_indices": []
+    }
+  },
+  "imports": [
+    "package:drift/drift.dart",
+    "package:siak_ilmi/core/database/tables/tagihan_siswa_table.dart",
+    "package:siak_ilmi/core/database/tables/kategori_biaya_table.dart"
+  ]
+}
