@@ -93,13 +93,22 @@ class StudentRepository {
   /// Bulk import from Dapodik parse result.
   /// Skips duplicates by NISN. Returns count of inserted rows.
   Future<int> bulkImport(List<DapodikImportRow> rows, String createdBy) async {
-    int inserted = 0;
+    final students = await bulkImportStudents(rows, createdBy);
+    return students.length;
+  }
+
+  /// Bulk import from Dapodik parse result returning newly registered [SiswaData].
+  Future<List<SiswaData>> bulkImportStudents(
+    List<DapodikImportRow> rows,
+    String createdBy,
+  ) async {
+    final insertedStudents = <SiswaData>[];
     for (final row in rows) {
       if (row.nisn != null) {
         final existing = await siswaDao.getByNisn(row.nisn!);
         if (existing != null) continue; // Skip duplicate
       }
-      await registerStudent(
+      final student = await registerStudent(
         sekolahId: row.sekolahId,
         kodeSekolah: row.kodeSekolah,
         tahunMasuk: row.tahunMasuk,
@@ -110,9 +119,9 @@ class StudentRepository {
         kontakWali: row.kontakWali,
         createdBy: createdBy,
       );
-      inserted++;
+      insertedStudents.add(student);
     }
-    return inserted;
+    return insertedStudents;
   }
 }
 

@@ -12,6 +12,7 @@ class ReceiptModel {
     required this.items,
     required this.totalBayar,
     required this.createdBy,
+    this.operatorNip,
   });
 
   final String nomorKuitansi;
@@ -24,6 +25,7 @@ class ReceiptModel {
   final List<ReceiptLineItem> items;
   final int totalBayar;
   final String createdBy;
+  final String? operatorNip;
 }
 
 class ReceiptLineItem {

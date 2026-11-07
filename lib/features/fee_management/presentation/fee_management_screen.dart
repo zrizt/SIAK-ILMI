@@ -7,6 +7,7 @@ import '../../../core/database/daos/tarif_dao.dart';
 import '../../../core/formatters/currency_formatter.dart';
 import '../../../core/services/audit_logger_service.dart';
 import '../../settings/presentation/pin_auth_screen.dart';
+import 'bulk_billing_screen.dart';
 
 // ── Providers ──────────────────────────────────────────────────────────────
 
@@ -37,6 +38,19 @@ class FeeManagementScreen extends ConsumerWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Manajemen Biaya'),
+          actions: [
+            if (isAdmin)
+              IconButton(
+                icon: const Icon(Icons.auto_mode),
+                tooltip: 'Generate SPP Massal',
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const BulkBillingScreen(),
+                  ),
+                ),
+              ),
+          ],
           bottom: const TabBar(
             tabs: [
               Tab(text: 'TARIF STANDAR'),

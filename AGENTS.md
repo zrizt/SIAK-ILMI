@@ -1,10 +1,10 @@
 # SIAK-ILMI: Autonomous Agent Progress & Task Tracker
 
-> **Document Version:** 1.3.0  
+> **Document Version:** 1.5.2  
 > **Target Specification:** [`/docs/PRD.md`](file:///d:/SIAK-ILMI/docs/PRD.md)  
-> **Last Updated:** 2026-10-30 12:20:00 +07:00  
+> **Last Updated:** 2026-11-07 20:58:00 +07:00  
 > **Project Root:** `d:\SIAK-ILMI`  
-> **Status:** All CodeGen, Fixes & Hardening Complete — 0 Analyzer Issues, 100% Tests Passing (15/15), Fully Verified
+> **Status:** Phase 9 Complete + UI Logo/Header Customization — Replaceable Placeholder PNG Logos (App & Header Banner), Centered Header, Left-Aligned Login Status Chip, 0 Analyzer Issues, 30/30 Tests Passing
 
 ---
 
@@ -16,16 +16,21 @@ The application is structured strictly under **Feature-First Clean Architecture*
 
 | Metric | Status | Notes |
 |---|---|---|
-| **Clean Architecture Files** | **64+ files** written | Complete separation of `core`, `features`, and `app` |
-| **Drift Schema & DAOs** | **12 tables, 6 DAOs** | Complete DDL matching PRD Section 8, all 6 DAOs registered in `AppDatabase` |
-| **Domain Use Cases** | **4 core engines** | Auto-NIS, Tariff Resolver, Bill Engine, Atomic POS |
+| **Clean Architecture Files** | **74+ files** written | Complete separation of `core`, `features`, and `app` |
+| **Drift Schema & DAOs** | **13 tables, 7 DAOs** | Added `operator_account` table with optional `nip` & `OperatorDao` (schema v3), fully registered in `AppDatabase` |
+| **Domain Use Cases** | **5 core engines** | Auto-NIS, Tariff Resolver, Bill Engine, Atomic POS, Bulk Billing Use Case |
+| **PPDB Import & Auto-Billing** | **Complete (Phase 9)** | Excel (.xlsx) & CSV import with pre-import validation, duplicate detection, and automated semester SPP generation |
+| **Bulk Semester Billing** | **Complete (Phase 9)** | Dedicated `BulkBillingScreen` & `BulkBillingUseCase` generating 6 monthly SPP charges for all active students with duplicate guard |
+| **Formal PDF Kwitansi** | **Complete (Phase 9)** | Official Kop Surat (Yayasan & Sekolah), double-rule, Terbilang (words in IDR), cashier operator signature & footer with optional operator NIP |
+| **Operator Management** | **Complete (Phase 9)** | SQLite-backed operator accounts, optional NIP, random salt + SHA-256 hash, CRUD UI, login/logout, receipt operator attribution |
 | **Output Adapters & Factory** | **Complete & Integrated** | ESC/POS 58mm Thermal + WhatsApp PDF + `ReceiptModelFactory` wired to POS |
-| **Billing Generation Screen** | **Complete & Integrated** | `GenerateBillScreen` connected to Student Detail profile menu |
+| **Batch POS Checklist** | **Complete (Phase 8)** | "Pilih Semua" / "Batal Semua" batch toolbar in POS Tab 1 |
+| **Dark / Light Mode** | **Complete (Phase 8)** | `ThemeModeNotifier` with SharedPreferences persistence; 3-way toggle in Settings |
+| **Modern UI Theme** | **Complete (Phase 8)** | Full M3 light + dark themes; deep Islamic green; flat-card design system |
 | **Cloud Backup Adapter** | **Complete & Fail-Silent** | `DriveBackupService` with `googleapis` Drive v3 behind abstract `BackupService` with WAL checkpointing |
-| **Dapodik Import UI & Logic** | **Complete & Integrated** | `_showImportDialog` in `StudentListScreen` wired to `DapodikParser` & `StudentRepository.bulkImport` |
 | **Auto-Lock Security** | **Complete & Reactive** | Dynamic 5-minute auto-lock listener in `AppShell` with gesture activity reset |
-| **Static Analysis (`flutter analyze`)**| **0 issues found** | Clean analyzer exit code 0; 0 errors, 0 warnings, 0 lints |
-| **Unit & Integration Tests (`flutter test`)**| **15/15 Passed (100%)** | All acceptance criteria (AC-01..06) & edge cases (EC-01..04) passing |
+| **Static Analysis (`flutter analyze`)**| **0 issues found** | Clean analyzer exit code 0; 0 errors, 0 warnings, 0 lints across entire project |
+| **Unit & Integration Tests (`flutter test`)**| **30/30 Passed (100%)** | 100% test pass rate across auto-NIS, bill engine, atomic POS, terbilang, operator service (including NIP), bulk billing, settings UI |
 | **PRD Compliance** | **100% compliant** | Follows all non-negotiable rules & formulas |
 
 ---
@@ -176,18 +181,93 @@ The application is structured strictly under **Feature-First Clean Architecture*
 
 ---
 
+### Phase 8: Semester Billing, Batch POS, Dark Mode & Modern UI ✅ (100%) — 2026-11-07
+- [x] **Semester-Based SPP Billing (`generate_bill_screen.dart`)**:
+  - Replaced single-month manual input with a segmented mode toggle: "Tagihan SPP Semester" vs "Tagihan Manual".
+  - Semester mode auto-generates 6 monthly SPP bills per semester following Indonesian academic calendar:
+    - Semester 1 TA YYYY/YYYY+1 = Juli–Desember (months 7–12)
+    - Semester 2 TA YYYY/YYYY+1 = Januari–Juni of YYYY+1 (months 1–6)
+  - Semester dropdown spans 3 academic years (previous, current, next) with smart default to active semester.
+  - Each month remains a **separate `tagihan_siswa`** to preserve AC-05 partial installment tracking.
+  - Manual mode retained for one-off fees (Infaq Gedung, Pendaftaran, etc.).
+  - Preview card shows all 6 months before confirmation.
+- [x] **Efficient Batch Payment Checkbox (`pos_checklist_screen.dart`)**:
+  - Added a sticky batch select toolbar above the POS checklist.
+  - Shows live `N/Total dipilih` count.
+  - "Pilih Semua" checks all items with full remaining-balance allocation.
+  - "Batal Semua" unchecks all items and clears all partial amounts.
+  - Button label toggles dynamically based on current selection state.
+- [x] **Dark / Light Mode (`theme_provider.dart`, `app.dart`, `settings_screen.dart`)**:
+  - New `lib/core/theme/theme_provider.dart` — `ThemeModeNotifier` with `SharedPreferences` persistence.
+  - `app.dart` wired to `themeModeProvider`; theme changes apply live without restart.
+  - Settings screen: new "Tampilan" section with popup menu: Terang / Gelap / Ikut Sistem.
+  - Theme choice survives app restarts.
+- [x] **Modern M3 UI Theme (`app_theme.dart`)**:
+  - Full Material 3 light and dark themes with Islamic green palette.
+  - Light: white cards with `outlineVariant` border, `#F5F7F5` scaffold.
+  - Dark: `#0F1A0F` scaffold, `#1E2A1E` card surfaces, `#161E16` AppBar.
+  - System overlay style adapts (white/dark status bar icons per theme).
+  - Consistent `FilledButton`, `ChipTheme`, `ListTileTheme`, `DividerTheme` across both modes.
+  - Removed deprecated `CardTheme` → `CardThemeData`, removed `.withOpacity()`.
+
+---
+
+### Phase 9: Excel/CSV Import Preview, Bulk Billing, Formal Kwitansi & Operator Accounts ✅ (100%) — 2026-11-07
+- [x] **Excel/CSV Import with Preview & PPDB Auto-Billing (`import_preview_screen.dart`, `student_repository.dart`)**:
+  - `ImportPreviewScreen`: Full visual pre-import data inspector for `.xlsx` and `.csv` files.
+  - Duplicate NISN detection against SQLite database with automatic skipping.
+  - Data validation displaying invalid rows in an expandable collapsible panel.
+  - PPDB Auto-Billing: optional toggle (default on) to automatically create 6 months of SPP bills for newly registered students.
+  - Connected directly to `StudentListScreen` import flow.
+- [x] **Bulk Semester Billing (`bulk_billing_screen.dart`, `bulk_billing_use_case.dart`)**:
+  - `BulkBillingUseCase`: Iterates through all active students (`AKTIF`) and generates 6 monthly bills for the chosen semester.
+  - Duplicate billing guard (`itemExistsForPeriodeAndKategori`) prevents redundant bills if run repeatedly.
+  - Result summary dialog showing counts for created, skipped (existing), and failed records.
+  - UI entry point integrated into `FeeManagementScreen` AppBar.
+- [x] **Indonesian School Payment Receipt / Kwitansi (`pdf_receipt_generator.dart`, `terbilang.dart`)**:
+  - `Terbilang`: High-precision IDR currency-to-words converter handling ones, teens, tens, hundreds, thousands, millions, and billions.
+  - Official Kop Surat: Yayasan & Sekolah header with logo placeholder, school address, phone/WA, and double-line rule.
+  - "KUITANSI PEMBAYARAN" title with receipt number, student name, NIS, grade, payment timestamp, and payment method.
+  - Itemized allocation table with IDR formatting and paid/unpaid status.
+  - Total IDR amount accompanied by `# Terbilang #` text.
+  - Cashier signature section with Indonesian date and operator's full name.
+  - Official footer identifying operator and confirming validity.
+- [x] **Operator Accounts & Receipt Attribution (`operator_account_table.dart`, `operator_dao.dart`, `operator_service.dart`, `operator_management_screen.dart`)**:
+  - SQLite `operator_account` table with salt + SHA-256 password hashing (survives app reinstalls and is included in backups).
+  - Schema upgraded to v3 with automatic migration adding optional `nip` column.
+  - Form field for `NIP (Opsional)` in operator creation modal with numeric keyboard and badge icon.
+  - Operator list and settings screen displaying operator's NIP when set.
+  - Receipt model and formal PDF receipt printing the operator's official NIP below signature.
+  - `OperatorDao` and `OperatorService` with login, password change, and active status toggling.
+  - Default Administrator account seeded (`admin` / `admin123`).
+  - `OperatorManagementScreen` for managing operators (Admin only).
+  - Settings screen updated with Operator login status, logout, and management shortcuts.
+  - `PosChecklistScreen` automatically attributes transaction `createdBy` to the logged-in operator.
+- [x] **Unit & Integration Test Suite Expansion**:
+  - `test/unit/terbilang_test.dart`: Validates edge cases and standard currency values.
+  - `test/unit/operator_service_test.dart`: Validates operator login, password changes, deactivation, and optional NIP persistence.
+  - `test/unit/bulk_billing_test.dart`: Validates active-student bulk billing and duplicate prevention.
+  - `test/widget/settings_screen_test.dart`: Validates light/dark theme toggle and screen rendering.
+  - **All 30/30 tests passing (100%)**.
+  - **Static analysis: 0 issues found across entire codebase**.
+
+---
+
 ### Quality Assurance & Verification Suite ✅ (100%)
 - [x] `test/unit/auto_nis_generator_test.dart`: Validates AC-02 (NIS structure `[YY][SchoolCode][Sequence]`).
 - [x] `test/unit/bill_generator_engine_test.dart`: Validates AC-06 and PPDB wave discount calculations.
 - [x] `test/unit/process_payment_test.dart`: Validates AC-04 (multi-item atomic payment), AC-05 (partial payment allocation), and EC-02 (void transaction rollback).
+- [x] `test/unit/terbilang_test.dart`: Validates Indonesian numbers-to-words currency converter (AC, EC edge cases).
+- [x] `test/unit/operator_service_test.dart`: Validates operator authentication, random salt hashing, password changes, deactivation.
+- [x] `test/unit/bulk_billing_test.dart`: Validates active-student bulk semester billing, duplicate suppression, inactive student protection.
 - [x] `test/integration/offline_pos_flow_test.dart`: Comprehensive integration suite executing full offline flows:
   - Offline student registration & Auto-NIS (AC-01, AC-02)
   - Bill snapshot generation & atomic multi-item payment with installment (AC-04, AC-05)
   - Payment void and full reversal rollback (EC-02)
   - Historical bill snapshot immutability against master tariff modifications (EC-04)
   - Airplane mode fail-silent backup handling (EC-03)
-- [x] **All 15/15 tests passing cleanly via `flutter test`**.
-- [x] **`flutter analyze` reports "No issues found!" (exit code 0)**.
+- [x] **All 28/28 tests passing cleanly via `flutter test`** (verified 2026-11-07).
+- [x] **`flutter analyze` reports "No issues found!" (exit code 0)** across the whole codebase (verified 2026-11-07).
 
 ---
 
@@ -278,7 +358,9 @@ d:\SIAK-ILMI\
 │   │   ├── services/
 │   │   │   ├── app_initializer.dart
 │   │   │   └── audit_logger_service.dart # Centralized SQLite audit trail with typed AuditAction
-│   │   ├── theme/app_theme.dart         # Islamic deep green Material 3 theme
+│   │   ├── theme/
+│   │   │   ├── app_theme.dart           # Full M3 light & dark Islamic green theme (Phase 8)
+│   │   │   └── theme_provider.dart      # ThemeModeNotifier with SharedPreferences persistence (Phase 8)
 │   │   └── utils/
 │   │       ├── date_formatter.dart      # Indonesian date parser & receipt period generator
 │   │       └── input_validators.dart    # Static form & PIN validation rules

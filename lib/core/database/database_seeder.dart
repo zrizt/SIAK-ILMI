@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -28,7 +32,10 @@ class DatabaseSeeder {
     final sekolahCountRow = await sekolahCountQuery.getSingle();
     final sekolahCount = sekolahCountRow.read(sekolahCountExpr) ?? 0;
 
-    if (sekolahCount > 0) return; // Already seeded
+    if (sekolahCount > 0) {
+      await _seedDefaultOperator();
+      return; // Already seeded schools, but ensure operator exists
+    }
 
     await _db.transaction(() async {
       await _seedSekolah();
@@ -37,6 +44,8 @@ class DatabaseSeeder {
       await _seedKategoriBiaya();
       await _seedTarifMaster();
     });
+
+    await _seedDefaultOperator();
   }
 
   // ─────────────────────────────────────────
@@ -187,5 +196,41 @@ class DatabaseSeeder {
         mode: InsertMode.insertOrIgnore,
       );
     });
+  }
+
+  // ─────────────────────────────────────────
+  // 6. Default Operator Account
+  // ─────────────────────────────────────────
+  Future<void> _seedDefaultOperator() async {
+    final countExpr = _db.operatorAccount.id.count();
+    final q = _db.selectOnly(_db.operatorAccount)..addColumns([countExpr]);
+    final row = await q.getSingle();
+    final count = row.read(countExpr) ?? 0;
+    if (count > 0) return;
+
+    final salt = _generateSalt();
+    final hash = _hashPassword('admin123', salt);
+    final now = DateTime.now().toIso8601String();
+    await _db.into(_db.operatorAccount).insert(
+          OperatorAccountCompanion.insert(
+            fullName: 'Administrator',
+            username: 'admin',
+            passwordHash: hash,
+            passwordSalt: salt,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+  }
+
+  static String _generateSalt() {
+    final rng = Random.secure();
+    final bytes = List<int>.generate(18, (_) => rng.nextInt(256));
+    return base64Url.encode(bytes);
+  }
+
+  static String _hashPassword(String password, String salt) {
+    final bytes = utf8.encode('$salt:$password');
+    return sha256.convert(bytes).toString();
   }
 }

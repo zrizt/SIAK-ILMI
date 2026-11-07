@@ -7,6 +7,7 @@ import '../../../core/database/daos/pembayaran_dao.dart';
 import '../../../core/database/daos/siswa_dao.dart';
 import '../../../core/database/daos/tagihan_dao.dart';
 import '../../../core/formatters/currency_formatter.dart';
+import '../../../core/security/operator_service.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../backup_restore/presentation/backup_restore_screen.dart';
 import '../../fee_management/presentation/fee_management_screen.dart';
@@ -145,19 +146,47 @@ class _DashboardTab extends ConsumerWidget {
     final sekolahFilter = ref.watch(dashboardSekolahFilterProvider);
     final metricsAsync = ref.watch(dashboardMetricsProvider);
     final role = ref.watch(authRoleProvider);
+    final op = ref.watch(activeOperatorProvider);
+    final loginLabel = op != null
+        ? op.fullName.split(' ').first
+        : (role?.displayName ?? 'Admin');
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard SIAK-ILMI'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 4),
+        centerTitle: true,
+        leadingWidth: 110,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 12),
+          child: Align(
+            alignment: Alignment.centerLeft,
             child: Chip(
-              avatar: const Icon(Icons.person_outline, size: 16),
-              label: Text(role?.displayName ?? 'Guest'),
+              avatar: const Icon(Icons.person_outline, size: 14),
+              label: Text(
+                loginLabel,
+                style: const TextStyle(fontSize: 11),
+                overflow: TextOverflow.ellipsis,
+              ),
               visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              padding: const EdgeInsets.symmetric(horizontal: 4),
             ),
           ),
+        ),
+        title: Image.asset(
+          'assets/images/logo_header.png',
+          height: 36,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) => Image.asset(
+            'assets/images/logo.png',
+            height: 32,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) => const Text(
+              'SIAK-ILMI',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+        actions: [
           IconButton(
             icon: const Icon(Icons.lock_outline),
             tooltip: 'Kunci Aplikasi',
@@ -223,42 +252,65 @@ class _DashboardBody extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // Greeting card
+        // Greeting card with App Logo
         Card(
           color: Theme.of(context).colorScheme.primaryContainer,
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                Icon(
-                  Icons.wb_sunny_outlined,
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                  size: 32,
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  child: const Icon(
+                    Icons.account_balance,
+                    color: Colors.white,
+                    size: 22,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        greeting,
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                      Row(
+                        children: [
+                          Icon(
+                            hour < 18
+                                ? Icons.wb_sunny_outlined
+                                : Icons.nightlight_outlined,
+                            size: 16,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimaryContainer,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            greeting,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
                                   color: Theme.of(context)
                                       .colorScheme
                                       .onPrimaryContainer,
                                   fontWeight: FontWeight.bold,
                                 ),
+                          ),
+                        ],
                       ),
+                      const SizedBox(height: 2),
                       Text(
                         DateFormatter.toDisplay(now),
-                        style:
-                            Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onPrimaryContainer
-                                      .withValues(alpha: 0.8),
-                                ),
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onPrimaryContainer
+                                  .withValues(alpha: 0.8),
+                            ),
                       ),
                     ],
                   ),

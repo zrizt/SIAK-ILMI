@@ -6,8 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/database/app_database.dart';
 import '../../settings/presentation/pin_auth_screen.dart';
 import '../data/dapodik_parser.dart';
-import '../data/student_repository.dart';
 import '../domain/student_providers.dart';
+import 'import_preview_screen.dart';
 import 'student_detail_screen.dart';
 import 'student_form_screen.dart';
 
@@ -171,34 +171,32 @@ class StudentListScreen extends ConsumerWidget {
 
                         try {
                           final parser = ref.read(dapodikParserProvider);
-                          final repository = ref.read(studentRepositoryProvider);
-
                           final result = await parser.parseFile(file, rawYear);
-                          final insertedCount = await repository.bulkImport(
-                            result.rows,
-                            'ADMIN',
-                          );
 
                           if (ctx.mounted) {
                             Navigator.pop(ctx);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Berhasil mengimpor $insertedCount siswa. '
-                                  '(${result.errorRows.length} baris tidak valid dilewati)',
+                            final imported = await Navigator.push<bool>(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ImportPreviewScreen(
+                                  parseResult: result,
+                                  tahunMasuk: rawYear,
                                 ),
-                                backgroundColor: Colors.green,
                               ),
                             );
+
+                            if (imported == true) {
+                              ref.invalidate(filteredStudentListProvider);
+                            }
                           }
                         } catch (e) {
                           setDialogState(() {
                             isImporting = false;
-                            errorMessage = 'Gagal import: $e';
+                            errorMessage = 'Gagal memproses file: $e';
                           });
                         }
                       },
-                child: const Text('Mulai Import'),
+                child: const Text('Pratinjau & Konfirmasi'),
               ),
             ],
           );

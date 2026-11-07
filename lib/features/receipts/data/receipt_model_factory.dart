@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/database/daos/operator_dao.dart';
 import '../../../core/database/daos/pembayaran_dao.dart';
 import '../../../core/database/daos/siswa_dao.dart';
 import '../domain/receipt_model.dart';
@@ -16,6 +17,7 @@ class ReceiptModelFactory {
   final AppDatabase _db;
   late final PembayaranDao _pembayaranDao = PembayaranDao(_db);
   late final SiswaDao _siswaDao = SiswaDao(_db);
+  late final OperatorDao _operatorDao = OperatorDao(_db);
 
   /// Assembles a [ReceiptModel] from transaction ID.
   Future<ReceiptModel?> buildFromTransactionId(int transaksiId) async {
@@ -76,6 +78,17 @@ class ReceiptModelFactory {
       }
     }
 
+    // 4. Fetch Operator NIP if available
+    String? operatorNip;
+    final op = await _operatorDao.getByUsername(txn.createdBy);
+    if (op != null) {
+      operatorNip = op.nip;
+    } else {
+      final allOps = await _operatorDao.getAllOperators();
+      final match = allOps.where((o) => o.fullName == txn.createdBy).firstOrNull;
+      operatorNip = match?.nip;
+    }
+
     return ReceiptModel(
       nomorKuitansi: txn.nomorKuitansi,
       tanggalBayar: DateTime.tryParse(txn.tanggalBayar) ?? DateTime.now(),
@@ -87,6 +100,7 @@ class ReceiptModelFactory {
       items: lineItems,
       totalBayar: txn.totalBayar,
       createdBy: txn.createdBy,
+      operatorNip: operatorNip,
     );
   }
 }

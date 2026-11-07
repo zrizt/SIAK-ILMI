@@ -114,6 +114,47 @@ class TagihanDao extends DatabaseAccessor<AppDatabase>
         .write(const TagihanSiswaCompanion(isLunas: Value(0)));
   }
 
+  // ────────── Duplicate-billing guards ──────────
+
+  /// Returns true if any tagihan_siswa row already exists for [siswaId]+[periode].
+  /// Used to prevent duplicate billing headers.
+  Future<bool> tagihanExistsForPeriode(int siswaId, String periode) async {
+    final result = await (select(tagihanSiswa)
+          ..where(
+            (t) => t.siswaId.equals(siswaId) & t.periode.equals(periode),
+          ))
+        .getSingleOrNull();
+    return result != null;
+  }
+
+  /// Returns true if a tagihan_item with [kategoriBiayaId] already exists
+  /// under any tagihan_siswa with [periode] for [siswaId].
+  /// Used to prevent per-kategori duplicate billing (e.g. SPP Juli 2026).
+  Future<bool> itemExistsForPeriodeAndKategori(
+    int siswaId,
+    String periode,
+    int kategoriBiayaId,
+  ) async {
+    final headers = await (select(tagihanSiswa)
+          ..where(
+            (t) => t.siswaId.equals(siswaId) & t.periode.equals(periode),
+          ))
+        .get();
+    for (final h in headers) {
+      final items = await (select(tagihanItem)
+            ..where(
+              (i) =>
+                  i.tagihanId.equals(h.id) &
+                  i.kategoriBiayaId.equals(kategoriBiayaId),
+            ))
+          .get();
+      if (items.isNotEmpty) return true;
+    }
+    return false;
+  }
+
+  // ────────── Internal helpers ──────────
+
   Future<void> _checkAndMarkTagihanLunas(int tagihanId) async {
     final allItems = await getItemsByTagihan(tagihanId);
     final allPaid = allItems.every((i) => i.isLunas == 1);

@@ -81,11 +81,17 @@ class _PinAuthScreenState extends ConsumerState<PinAuthScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Logo / App Name
-                  Icon(
-                    Icons.account_balance,
-                    size: 56,
-                    color: theme.colorScheme.primary,
+                  // Replaceable Logo PNG (assets/images/logo.png)
+                  Image.asset(
+                    'assets/images/logo.png',
+                    height: 72,
+                    width: 72,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) => Icon(
+                      Icons.account_balance,
+                      size: 56,
+                      color: theme.colorScheme.primary,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Text(

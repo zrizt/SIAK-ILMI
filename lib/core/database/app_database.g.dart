@@ -3913,6 +3913,470 @@ class AuditLogCompanion extends UpdateCompanion<AuditLogData> {
   }
 }
 
+class $OperatorAccountTable extends OperatorAccount
+    with TableInfo<$OperatorAccountTable, OperatorData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $OperatorAccountTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _fullNameMeta =
+      const VerificationMeta('fullName');
+  @override
+  late final GeneratedColumn<String> fullName = GeneratedColumn<String>(
+      'full_name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _nipMeta = const VerificationMeta('nip');
+  @override
+  late final GeneratedColumn<String> nip = GeneratedColumn<String>(
+      'nip', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _usernameMeta =
+      const VerificationMeta('username');
+  @override
+  late final GeneratedColumn<String> username = GeneratedColumn<String>(
+      'username', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'));
+  static const VerificationMeta _passwordHashMeta =
+      const VerificationMeta('passwordHash');
+  @override
+  late final GeneratedColumn<String> passwordHash = GeneratedColumn<String>(
+      'password_hash', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _passwordSaltMeta =
+      const VerificationMeta('passwordSalt');
+  @override
+  late final GeneratedColumn<String> passwordSalt = GeneratedColumn<String>(
+      'password_salt', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _isActiveMeta =
+      const VerificationMeta('isActive');
+  @override
+  late final GeneratedColumn<int> isActive = GeneratedColumn<int>(
+      'is_active', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(1));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<String> createdAt = GeneratedColumn<String>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        fullName,
+        nip,
+        username,
+        passwordHash,
+        passwordSalt,
+        isActive,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'operator_account';
+  @override
+  VerificationContext validateIntegrity(Insertable<OperatorData> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('full_name')) {
+      context.handle(_fullNameMeta,
+          fullName.isAcceptableOrUnknown(data['full_name']!, _fullNameMeta));
+    } else if (isInserting) {
+      context.missing(_fullNameMeta);
+    }
+    if (data.containsKey('nip')) {
+      context.handle(
+          _nipMeta, nip.isAcceptableOrUnknown(data['nip']!, _nipMeta));
+    }
+    if (data.containsKey('username')) {
+      context.handle(_usernameMeta,
+          username.isAcceptableOrUnknown(data['username']!, _usernameMeta));
+    } else if (isInserting) {
+      context.missing(_usernameMeta);
+    }
+    if (data.containsKey('password_hash')) {
+      context.handle(
+          _passwordHashMeta,
+          passwordHash.isAcceptableOrUnknown(
+              data['password_hash']!, _passwordHashMeta));
+    } else if (isInserting) {
+      context.missing(_passwordHashMeta);
+    }
+    if (data.containsKey('password_salt')) {
+      context.handle(
+          _passwordSaltMeta,
+          passwordSalt.isAcceptableOrUnknown(
+              data['password_salt']!, _passwordSaltMeta));
+    } else if (isInserting) {
+      context.missing(_passwordSaltMeta);
+    }
+    if (data.containsKey('is_active')) {
+      context.handle(_isActiveMeta,
+          isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  OperatorData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return OperatorData(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      fullName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}full_name'])!,
+      nip: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}nip']),
+      username: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}username'])!,
+      passwordHash: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}password_hash'])!,
+      passwordSalt: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}password_salt'])!,
+      isActive: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}is_active'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $OperatorAccountTable createAlias(String alias) {
+    return $OperatorAccountTable(attachedDatabase, alias);
+  }
+}
+
+class OperatorData extends DataClass implements Insertable<OperatorData> {
+  final int id;
+  final String fullName;
+  final String? nip;
+  final String username;
+  final String passwordHash;
+  final String passwordSalt;
+  final int isActive;
+  final String createdAt;
+  final String updatedAt;
+  const OperatorData(
+      {required this.id,
+      required this.fullName,
+      this.nip,
+      required this.username,
+      required this.passwordHash,
+      required this.passwordSalt,
+      required this.isActive,
+      required this.createdAt,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['full_name'] = Variable<String>(fullName);
+    if (!nullToAbsent || nip != null) {
+      map['nip'] = Variable<String>(nip);
+    }
+    map['username'] = Variable<String>(username);
+    map['password_hash'] = Variable<String>(passwordHash);
+    map['password_salt'] = Variable<String>(passwordSalt);
+    map['is_active'] = Variable<int>(isActive);
+    map['created_at'] = Variable<String>(createdAt);
+    map['updated_at'] = Variable<String>(updatedAt);
+    return map;
+  }
+
+  OperatorAccountCompanion toCompanion(bool nullToAbsent) {
+    return OperatorAccountCompanion(
+      id: Value(id),
+      fullName: Value(fullName),
+      nip: nip == null && nullToAbsent ? const Value.absent() : Value(nip),
+      username: Value(username),
+      passwordHash: Value(passwordHash),
+      passwordSalt: Value(passwordSalt),
+      isActive: Value(isActive),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory OperatorData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return OperatorData(
+      id: serializer.fromJson<int>(json['id']),
+      fullName: serializer.fromJson<String>(json['fullName']),
+      nip: serializer.fromJson<String?>(json['nip']),
+      username: serializer.fromJson<String>(json['username']),
+      passwordHash: serializer.fromJson<String>(json['passwordHash']),
+      passwordSalt: serializer.fromJson<String>(json['passwordSalt']),
+      isActive: serializer.fromJson<int>(json['isActive']),
+      createdAt: serializer.fromJson<String>(json['createdAt']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'fullName': serializer.toJson<String>(fullName),
+      'nip': serializer.toJson<String?>(nip),
+      'username': serializer.toJson<String>(username),
+      'passwordHash': serializer.toJson<String>(passwordHash),
+      'passwordSalt': serializer.toJson<String>(passwordSalt),
+      'isActive': serializer.toJson<int>(isActive),
+      'createdAt': serializer.toJson<String>(createdAt),
+      'updatedAt': serializer.toJson<String>(updatedAt),
+    };
+  }
+
+  OperatorData copyWith(
+          {int? id,
+          String? fullName,
+          Value<String?> nip = const Value.absent(),
+          String? username,
+          String? passwordHash,
+          String? passwordSalt,
+          int? isActive,
+          String? createdAt,
+          String? updatedAt}) =>
+      OperatorData(
+        id: id ?? this.id,
+        fullName: fullName ?? this.fullName,
+        nip: nip.present ? nip.value : this.nip,
+        username: username ?? this.username,
+        passwordHash: passwordHash ?? this.passwordHash,
+        passwordSalt: passwordSalt ?? this.passwordSalt,
+        isActive: isActive ?? this.isActive,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  OperatorData copyWithCompanion(OperatorAccountCompanion data) {
+    return OperatorData(
+      id: data.id.present ? data.id.value : this.id,
+      fullName: data.fullName.present ? data.fullName.value : this.fullName,
+      nip: data.nip.present ? data.nip.value : this.nip,
+      username: data.username.present ? data.username.value : this.username,
+      passwordHash: data.passwordHash.present
+          ? data.passwordHash.value
+          : this.passwordHash,
+      passwordSalt: data.passwordSalt.present
+          ? data.passwordSalt.value
+          : this.passwordSalt,
+      isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('OperatorData(')
+          ..write('id: $id, ')
+          ..write('fullName: $fullName, ')
+          ..write('nip: $nip, ')
+          ..write('username: $username, ')
+          ..write('passwordHash: $passwordHash, ')
+          ..write('passwordSalt: $passwordSalt, ')
+          ..write('isActive: $isActive, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, fullName, nip, username, passwordHash,
+      passwordSalt, isActive, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is OperatorData &&
+          other.id == this.id &&
+          other.fullName == this.fullName &&
+          other.nip == this.nip &&
+          other.username == this.username &&
+          other.passwordHash == this.passwordHash &&
+          other.passwordSalt == this.passwordSalt &&
+          other.isActive == this.isActive &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class OperatorAccountCompanion extends UpdateCompanion<OperatorData> {
+  final Value<int> id;
+  final Value<String> fullName;
+  final Value<String?> nip;
+  final Value<String> username;
+  final Value<String> passwordHash;
+  final Value<String> passwordSalt;
+  final Value<int> isActive;
+  final Value<String> createdAt;
+  final Value<String> updatedAt;
+  const OperatorAccountCompanion({
+    this.id = const Value.absent(),
+    this.fullName = const Value.absent(),
+    this.nip = const Value.absent(),
+    this.username = const Value.absent(),
+    this.passwordHash = const Value.absent(),
+    this.passwordSalt = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  OperatorAccountCompanion.insert({
+    this.id = const Value.absent(),
+    required String fullName,
+    this.nip = const Value.absent(),
+    required String username,
+    required String passwordHash,
+    required String passwordSalt,
+    this.isActive = const Value.absent(),
+    required String createdAt,
+    required String updatedAt,
+  })  : fullName = Value(fullName),
+        username = Value(username),
+        passwordHash = Value(passwordHash),
+        passwordSalt = Value(passwordSalt),
+        createdAt = Value(createdAt),
+        updatedAt = Value(updatedAt);
+  static Insertable<OperatorData> custom({
+    Expression<int>? id,
+    Expression<String>? fullName,
+    Expression<String>? nip,
+    Expression<String>? username,
+    Expression<String>? passwordHash,
+    Expression<String>? passwordSalt,
+    Expression<int>? isActive,
+    Expression<String>? createdAt,
+    Expression<String>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (fullName != null) 'full_name': fullName,
+      if (nip != null) 'nip': nip,
+      if (username != null) 'username': username,
+      if (passwordHash != null) 'password_hash': passwordHash,
+      if (passwordSalt != null) 'password_salt': passwordSalt,
+      if (isActive != null) 'is_active': isActive,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  OperatorAccountCompanion copyWith(
+      {Value<int>? id,
+      Value<String>? fullName,
+      Value<String?>? nip,
+      Value<String>? username,
+      Value<String>? passwordHash,
+      Value<String>? passwordSalt,
+      Value<int>? isActive,
+      Value<String>? createdAt,
+      Value<String>? updatedAt}) {
+    return OperatorAccountCompanion(
+      id: id ?? this.id,
+      fullName: fullName ?? this.fullName,
+      nip: nip ?? this.nip,
+      username: username ?? this.username,
+      passwordHash: passwordHash ?? this.passwordHash,
+      passwordSalt: passwordSalt ?? this.passwordSalt,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (fullName.present) {
+      map['full_name'] = Variable<String>(fullName.value);
+    }
+    if (nip.present) {
+      map['nip'] = Variable<String>(nip.value);
+    }
+    if (username.present) {
+      map['username'] = Variable<String>(username.value);
+    }
+    if (passwordHash.present) {
+      map['password_hash'] = Variable<String>(passwordHash.value);
+    }
+    if (passwordSalt.present) {
+      map['password_salt'] = Variable<String>(passwordSalt.value);
+    }
+    if (isActive.present) {
+      map['is_active'] = Variable<int>(isActive.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<String>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('OperatorAccountCompanion(')
+          ..write('id: $id, ')
+          ..write('fullName: $fullName, ')
+          ..write('nip: $nip, ')
+          ..write('username: $username, ')
+          ..write('passwordHash: $passwordHash, ')
+          ..write('passwordSalt: $passwordSalt, ')
+          ..write('isActive: $isActive, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3931,12 +4395,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $AlokasiPembayaranTable alokasiPembayaran =
       $AlokasiPembayaranTable(this);
   late final $AuditLogTable auditLog = $AuditLogTable(this);
+  late final $OperatorAccountTable operatorAccount =
+      $OperatorAccountTable(this);
   late final SiswaDao siswaDao = SiswaDao(this as AppDatabase);
   late final TagihanDao tagihanDao = TagihanDao(this as AppDatabase);
   late final PembayaranDao pembayaranDao = PembayaranDao(this as AppDatabase);
   late final TarifDao tarifDao = TarifDao(this as AppDatabase);
   late final AuditDao auditDao = AuditDao(this as AppDatabase);
   late final SekolahDao sekolahDao = SekolahDao(this as AppDatabase);
+  late final OperatorDao operatorDao = OperatorDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3953,7 +4420,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         tagihanItem,
         pembayaranTransaksi,
         alokasiPembayaran,
-        auditLog
+        auditLog,
+        operatorAccount
       ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
@@ -8104,6 +8572,236 @@ typedef $$AuditLogTableProcessedTableManager = ProcessedTableManager<
     (AuditLogData, BaseReferences<_$AppDatabase, $AuditLogTable, AuditLogData>),
     AuditLogData,
     PrefetchHooks Function()>;
+typedef $$OperatorAccountTableCreateCompanionBuilder = OperatorAccountCompanion
+    Function({
+  Value<int> id,
+  required String fullName,
+  Value<String?> nip,
+  required String username,
+  required String passwordHash,
+  required String passwordSalt,
+  Value<int> isActive,
+  required String createdAt,
+  required String updatedAt,
+});
+typedef $$OperatorAccountTableUpdateCompanionBuilder = OperatorAccountCompanion
+    Function({
+  Value<int> id,
+  Value<String> fullName,
+  Value<String?> nip,
+  Value<String> username,
+  Value<String> passwordHash,
+  Value<String> passwordSalt,
+  Value<int> isActive,
+  Value<String> createdAt,
+  Value<String> updatedAt,
+});
+
+class $$OperatorAccountTableFilterComposer
+    extends Composer<_$AppDatabase, $OperatorAccountTable> {
+  $$OperatorAccountTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get fullName => $composableBuilder(
+      column: $table.fullName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get nip => $composableBuilder(
+      column: $table.nip, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get username => $composableBuilder(
+      column: $table.username, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get passwordHash => $composableBuilder(
+      column: $table.passwordHash, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get passwordSalt => $composableBuilder(
+      column: $table.passwordSalt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get isActive => $composableBuilder(
+      column: $table.isActive, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$OperatorAccountTableOrderingComposer
+    extends Composer<_$AppDatabase, $OperatorAccountTable> {
+  $$OperatorAccountTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get fullName => $composableBuilder(
+      column: $table.fullName, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get nip => $composableBuilder(
+      column: $table.nip, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get username => $composableBuilder(
+      column: $table.username, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get passwordHash => $composableBuilder(
+      column: $table.passwordHash,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get passwordSalt => $composableBuilder(
+      column: $table.passwordSalt,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get isActive => $composableBuilder(
+      column: $table.isActive, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$OperatorAccountTableAnnotationComposer
+    extends Composer<_$AppDatabase, $OperatorAccountTable> {
+  $$OperatorAccountTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get fullName =>
+      $composableBuilder(column: $table.fullName, builder: (column) => column);
+
+  GeneratedColumn<String> get nip =>
+      $composableBuilder(column: $table.nip, builder: (column) => column);
+
+  GeneratedColumn<String> get username =>
+      $composableBuilder(column: $table.username, builder: (column) => column);
+
+  GeneratedColumn<String> get passwordHash => $composableBuilder(
+      column: $table.passwordHash, builder: (column) => column);
+
+  GeneratedColumn<String> get passwordSalt => $composableBuilder(
+      column: $table.passwordSalt, builder: (column) => column);
+
+  GeneratedColumn<int> get isActive =>
+      $composableBuilder(column: $table.isActive, builder: (column) => column);
+
+  GeneratedColumn<String> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$OperatorAccountTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $OperatorAccountTable,
+    OperatorData,
+    $$OperatorAccountTableFilterComposer,
+    $$OperatorAccountTableOrderingComposer,
+    $$OperatorAccountTableAnnotationComposer,
+    $$OperatorAccountTableCreateCompanionBuilder,
+    $$OperatorAccountTableUpdateCompanionBuilder,
+    (
+      OperatorData,
+      BaseReferences<_$AppDatabase, $OperatorAccountTable, OperatorData>
+    ),
+    OperatorData,
+    PrefetchHooks Function()> {
+  $$OperatorAccountTableTableManager(
+      _$AppDatabase db, $OperatorAccountTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$OperatorAccountTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$OperatorAccountTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$OperatorAccountTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> fullName = const Value.absent(),
+            Value<String?> nip = const Value.absent(),
+            Value<String> username = const Value.absent(),
+            Value<String> passwordHash = const Value.absent(),
+            Value<String> passwordSalt = const Value.absent(),
+            Value<int> isActive = const Value.absent(),
+            Value<String> createdAt = const Value.absent(),
+            Value<String> updatedAt = const Value.absent(),
+          }) =>
+              OperatorAccountCompanion(
+            id: id,
+            fullName: fullName,
+            nip: nip,
+            username: username,
+            passwordHash: passwordHash,
+            passwordSalt: passwordSalt,
+            isActive: isActive,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required String fullName,
+            Value<String?> nip = const Value.absent(),
+            required String username,
+            required String passwordHash,
+            required String passwordSalt,
+            Value<int> isActive = const Value.absent(),
+            required String createdAt,
+            required String updatedAt,
+          }) =>
+              OperatorAccountCompanion.insert(
+            id: id,
+            fullName: fullName,
+            nip: nip,
+            username: username,
+            passwordHash: passwordHash,
+            passwordSalt: passwordSalt,
+            isActive: isActive,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$OperatorAccountTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $OperatorAccountTable,
+    OperatorData,
+    $$OperatorAccountTableFilterComposer,
+    $$OperatorAccountTableOrderingComposer,
+    $$OperatorAccountTableAnnotationComposer,
+    $$OperatorAccountTableCreateCompanionBuilder,
+    $$OperatorAccountTableUpdateCompanionBuilder,
+    (
+      OperatorData,
+      BaseReferences<_$AppDatabase, $OperatorAccountTable, OperatorData>
+    ),
+    OperatorData,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -8132,4 +8830,6 @@ class $AppDatabaseManager {
       $$AlokasiPembayaranTableTableManager(_db, _db.alokasiPembayaran);
   $$AuditLogTableTableManager get auditLog =>
       $$AuditLogTableTableManager(_db, _db.auditLog);
+  $$OperatorAccountTableTableManager get operatorAccount =>
+      $$OperatorAccountTableTableManager(_db, _db.operatorAccount);
 }

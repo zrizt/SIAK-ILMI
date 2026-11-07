@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/security/operator_service.dart';
+import '../../../core/theme/theme_provider.dart';
 import '../../backup_restore/data/backup_service.dart';
 import '../../backup_restore/presentation/backup_restore_screen.dart';
 import '../../receipts/data/thermal_printer_adapter.dart';
+import 'operator_management_screen.dart';
 import 'pin_auth_screen.dart';
 
 /// Settings screen for SIAK-ILMI application configuration,
@@ -127,6 +130,117 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  void _showOperatorLoginDialog(BuildContext context) {
+    final userCtrl = TextEditingController();
+    final passCtrl = TextEditingController();
+    String? errorMsg;
+    bool isLoggingIn = false;
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (dCtx, setDState) {
+          return AlertDialog(
+            title: const Text('Login Operator'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Masuk dengan akun operator kasir untuk mencantumkan nama Anda di kuitansi.',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: userCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Username',
+                      prefixIcon: Icon(Icons.person_outline),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: passCtrl,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Password',
+                      prefixIcon: Icon(Icons.lock_outline),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  if (errorMsg != null) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      errorMsg!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: isLoggingIn ? null : () => Navigator.pop(ctx),
+                child: const Text('Batal'),
+              ),
+              FilledButton(
+                onPressed: isLoggingIn
+                    ? null
+                    : () async {
+                        final username = userCtrl.text.trim();
+                        final password = passCtrl.text;
+
+                        if (username.isEmpty || password.isEmpty) {
+                          setDState(() => errorMsg = 'Username dan password wajib diisi');
+                          return;
+                        }
+
+                        setDState(() {
+                          isLoggingIn = true;
+                          errorMsg = null;
+                        });
+
+                        final op = await ref
+                            .read(operatorServiceProvider)
+                            .login(username, password);
+
+                        if (ctx.mounted) {
+                          if (op != null) {
+                            ref.read(activeOperatorProvider.notifier).state = op;
+                            Navigator.pop(ctx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Login berhasil sebagai ${op.fullName}'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          } else {
+                            setDState(() {
+                              isLoggingIn = false;
+                              errorMsg = 'Username atau password salah, atau akun nonaktif';
+                            });
+                          }
+                        }
+                      },
+                child: isLoggingIn
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Masuk'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   void _showPrinterBottomSheet() {
     showModalBottomSheet<void>(
       context: context,
@@ -167,30 +281,36 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   children: [
                     Row(
                       children: [
-                        Icon(
-                          Icons.account_balance,
-                          size: 36,
-                          color: theme.colorScheme.onPrimaryContainer,
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: theme.colorScheme.primary,
+                          child: const Icon(
+                            Icons.account_balance,
+                            size: 24,
+                            color: Colors.white,
+                          ),
                         ),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'SIAK-ILMI v1.0.0',
-                              style: theme.textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: theme.colorScheme.onPrimaryContainer,
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'SIAK-ILMI v1.0.0',
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.onPrimaryContainer,
+                                ),
                               ),
-                            ),
-                            Text(
-                              'Darul Ilmi — Offline First',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.onPrimaryContainer
-                                    .withValues(alpha: 0.8),
+                              Text(
+                                'Darul Ilmi — Offline First',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onPrimaryContainer
+                                      .withValues(alpha: 0.8),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -251,7 +371,56 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const Divider(),
 
-          // ── 3. Printer ───────────────────────────────────────────
+          // ── Operator ──
+          const _SectionHeader(title: 'Akun Operator'),
+          Consumer(
+            builder: (ctx, ref, _) {
+              final op = ref.watch(activeOperatorProvider);
+              return ListTile(
+                leading: const Icon(Icons.person_pin_outlined),
+                title: Text(op != null ? op.fullName : 'Belum Login Operator'),
+                subtitle: Text(
+                  op != null
+                      ? '@${op.username}${op.nip != null && op.nip!.isNotEmpty ? ' (NIP: ${op.nip})' : ''} • Nama tercatat pada kuitansi'
+                      : 'Login untuk mencatat nama petugas pada kuitansi',
+                ),
+                trailing: op != null
+                    ? TextButton(
+                        onPressed: () {
+                          ref.read(activeOperatorProvider.notifier).state = null;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Operator telah logout')),
+                          );
+                        },
+                        child: const Text('Keluar'),
+                      )
+                    : TextButton(
+                        onPressed: () => _showOperatorLoginDialog(context),
+                        child: const Text('Login'),
+                      ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.manage_accounts_outlined),
+            title: const Text('Kelola Akun Operator'),
+            subtitle: const Text('Daftar operator kasir dan hak akses kuitansi'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const OperatorManagementScreen(),
+              ),
+            ),
+          ),
+          const Divider(),
+
+          // ── 3. Tampilan ──────────────────────────────────────────────────
+          const _SectionHeader(title: 'Tampilan'),
+          _ThemeModeTile(),
+          const Divider(),
+
+          // ── 4. Printer ───────────────────────────────────────────
           const _SectionHeader(title: 'Printer'),
           ListTile(
             leading: const Icon(Icons.print_outlined),
@@ -644,6 +813,76 @@ class _PrinterBottomSheetState extends State<_PrinterBottomSheet> {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ─── Theme Mode Tile ──────────────────────────────────────────────────────────
+
+class _ThemeModeTile extends ConsumerWidget {
+  // ignore: prefer_const_constructors_in_immutables
+  _ThemeModeTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeProvider);
+    final notifier = ref.read(themeModeProvider.notifier);
+
+    IconData icon;
+    String label;
+    switch (themeMode) {
+      case ThemeMode.light:
+        icon = Icons.light_mode_outlined;
+        label = 'Terang';
+      case ThemeMode.dark:
+        icon = Icons.dark_mode_outlined;
+        label = 'Gelap';
+      case ThemeMode.system:
+        icon = Icons.brightness_auto_outlined;
+        label = 'Ikut Sistem';
+    }
+
+    return ListTile(
+      leading: Icon(icon),
+      title: const Text('Mode Tampilan'),
+      subtitle: Text(label),
+      trailing: PopupMenuButton<ThemeMode>(
+        icon: const Icon(Icons.tune_outlined),
+        tooltip: 'Pilih mode tampilan',
+        onSelected: notifier.setMode,
+        itemBuilder: (_) => const [
+          PopupMenuItem(
+            value: ThemeMode.light,
+            child: Row(
+              children: [
+                Icon(Icons.light_mode_outlined),
+                SizedBox(width: 10),
+                Text('Terang'),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: ThemeMode.dark,
+            child: Row(
+              children: [
+                Icon(Icons.dark_mode_outlined),
+                SizedBox(width: 10),
+                Text('Gelap'),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: ThemeMode.system,
+            child: Row(
+              children: [
+                Icon(Icons.brightness_auto_outlined),
+                SizedBox(width: 10),
+                Text('Ikut Sistem'),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -10,6 +10,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import 'daos/audit_dao.dart';
+import 'daos/operator_dao.dart';
 import 'daos/pembayaran_dao.dart';
 import 'daos/sekolah_dao.dart';
 import 'daos/siswa_dao.dart';
@@ -19,6 +20,7 @@ import 'tables/alokasi_pembayaran_table.dart';
 import 'tables/audit_log_table.dart';
 import 'tables/kategori_biaya_table.dart';
 import 'tables/kelas_table.dart';
+import 'tables/operator_account_table.dart';
 import 'tables/pembayaran_transaksi_table.dart';
 import 'tables/sekolah_table.dart';
 import 'tables/siswa_table.dart';
@@ -50,6 +52,7 @@ final appDatabaseProvider = Provider<AppDatabase>(
     PembayaranTransaksi,
     AlokasiPembayaran,
     AuditLog,
+    OperatorAccount, // added in schema v2
   ],
   daos: [
     SiswaDao,
@@ -58,21 +61,21 @@ final appDatabaseProvider = Provider<AppDatabase>(
     TarifDao,
     AuditDao,
     SekolahDao,
+    OperatorDao, // added in schema v2
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (Migrator m) async {
           await m.createAll();
 
-          // Create performance indexes as raw SQL since Drift doesn't
-          // support index declarations natively in the table class.
+          // Create performance indexes.
           await customStatement(
             'CREATE INDEX IF NOT EXISTS idx_siswa_sekolah ON siswa(sekolah_id);',
           );
@@ -88,6 +91,16 @@ class AppDatabase extends _$AppDatabase {
           await customStatement(
             'CREATE INDEX IF NOT EXISTS idx_pembayaran_siswa ON pembayaran_transaksi(siswa_id);',
           );
+        },
+        onUpgrade: (Migrator m, int from, int to) async {
+          // v1 → v2: Add operator_account table
+          if (from < 2) {
+            await m.createTable(operatorAccount);
+          }
+          // v2 → v3: Add nip column to operator_account table
+          if (from < 3) {
+            await m.addColumn(operatorAccount, operatorAccount.nip);
+          }
         },
         beforeOpen: (details) async {
           // CRITICAL: Enable foreign key constraints on every connection.

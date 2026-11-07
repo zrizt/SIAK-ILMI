@@ -53,3 +53,5 @@ android/app/build/
 *.db-shm
 *.db-wal
 *.zip
+# Widget Preview related
+.widget_preview/

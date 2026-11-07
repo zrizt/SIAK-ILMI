@@ -8,6 +8,7 @@ import '../../../core/database/daos/tagihan_dao.dart';
 import '../../../core/database/daos/pembayaran_dao.dart';
 import '../../../core/database/daos/siswa_dao.dart';
 import '../../../core/formatters/currency_formatter.dart';
+import '../../../core/security/operator_service.dart';
 import '../../receipts/data/receipt_model_factory.dart';
 import '../../receipts/presentation/receipt_actions_sheet.dart';
 import '../../settings/presentation/pin_auth_screen.dart';
@@ -194,7 +195,9 @@ class _PosChecklistScreenState extends ConsumerState<PosChecklistScreen>
         ProcessPaymentParams(
           siswaId: widget.siswaId,
           metodeBayar: _metodeBayar,
-          createdBy: role?.displayName ?? 'Admin',
+          createdBy: ref.read(activeOperatorProvider)?.fullName ??
+              role?.displayName ??
+              'Admin',
           allocations: checkedItems.map((i) {
             return PaymentAllocation(
               tagihanItemId: i.item.id,
@@ -339,6 +342,20 @@ class _PosChecklistScreenState extends ConsumerState<PosChecklistScreen>
                     setState(() => item.isPartial = !item.isPartial),
                 onConfirm: _confirmPayment,
                 onRebuild: () => setState(() {}),
+                onSelectAll: () => setState(() {
+                  for (final c in _checklistItems) {
+                    c.isChecked = true;
+                    c.isPartial = false;
+                    c.partialAmountCtrl.clear();
+                  }
+                }),
+                onSelectNone: () => setState(() {
+                  for (final c in _checklistItems) {
+                    c.isChecked = false;
+                    c.isPartial = false;
+                    c.partialAmountCtrl.clear();
+                  }
+                }),
               );
             },
             loading: () =>
@@ -378,6 +395,8 @@ class _ChecklistTab extends StatelessWidget {
     required this.onTogglePartial,
     required this.onConfirm,
     required this.onRebuild,
+    required this.onSelectAll,
+    required this.onSelectNone,
   });
   final List<ChecklistItem> checklistItems;
   final int totalBayar;
@@ -388,11 +407,56 @@ class _ChecklistTab extends StatelessWidget {
   final void Function(ChecklistItem) onTogglePartial;
   final VoidCallback onConfirm;
   final VoidCallback onRebuild;
+  final VoidCallback onSelectAll;
+  final VoidCallback onSelectNone;
+
+  bool get _allChecked => checklistItems.every((i) => i.isChecked);
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final checkedCount = checklistItems.where((i) => i.isChecked).length;
+
     return Column(
       children: [
+        // ── Batch select toolbar ───────────────────────────────────────────
+        Container(
+          color: cs.surfaceContainerLow,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: Row(
+            children: [
+              Icon(Icons.checklist_rounded, size: 18, color: cs.primary),
+              const SizedBox(width: 6),
+              Text(
+                '$checkedCount/${checklistItems.length} dipilih',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: cs.onSurfaceVariant,
+                ),
+              ),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: isProcessing
+                    ? null
+                    : _allChecked
+                        ? onSelectNone
+                        : onSelectAll,
+                icon: Icon(
+                  _allChecked
+                      ? Icons.deselect
+                      : Icons.select_all,
+                  size: 16,
+                ),
+                label: Text(_allChecked ? 'Batal Semua' : 'Pilih Semua'),
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+              ),
+            ],
+          ),
+        ),
+
         Expanded(
           child: ListView(
             padding: const EdgeInsets.all(12),
