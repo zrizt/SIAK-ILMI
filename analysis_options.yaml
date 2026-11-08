@@ -12,3 +12,4 @@ analyzer:
     - build/**
     - android/**
     - "**/*.g.dart"
+    - web/**

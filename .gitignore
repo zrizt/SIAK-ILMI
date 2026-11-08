@@ -48,6 +48,9 @@ android/app/build/
 # Keystores and signing keys
 *.keystore
 *.jks
+andorid/*.keystore
+android/*.jks
+android/key.properties
 
 # SQLite local runtime files and backups
 *.db-shm

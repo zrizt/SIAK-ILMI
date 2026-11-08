@@ -1,4 +1,4 @@
-package com.darulilmi.siakilmi
+package com.nosera.siakilmi
 
 import io.flutter.embedding.android.FlutterActivity
 

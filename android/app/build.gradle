@@ -4,8 +4,17 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+// Load keystore properties
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file("key.properties")
+
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace "com.nosera.siakilmi"
+
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -27,9 +36,20 @@ android {
         multiDexEnabled true
     }
 
+    // Release signing configuration
+    signingConfigs {
+        release {
+            keyAlias keystoreProperties["keyAlias"]
+            keyPassword keystoreProperties["keyPassword"]
+            storeFile file(keystoreProperties["storeFile"])
+            storePassword keystoreProperties["storePassword"]
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.debug //.debug buat debug
+
             minifyEnabled false
             shrinkResources false
         }

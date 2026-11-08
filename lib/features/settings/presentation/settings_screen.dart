@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:siak_ilmi/core/utils/app_info.dart';
 import '../../../core/security/operator_service.dart';
 import '../../../core/theme/theme_provider.dart';
 import '../../backup_restore/data/backup_service.dart';
@@ -295,12 +296,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'SIAK-ILMI v1.0.0',
-                                style: theme.textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: theme.colorScheme.onPrimaryContainer,
-                                ),
+                              FutureBuilder<String>(
+                                future: AppInfo.version,
+                                builder: (context, snapshot) {
+                                  final version = snapshot.data ?? '...';
+
+                                  return Text(
+                                    'SIAK-ILMI v$version',
+                                    style: theme.textTheme.titleLarge?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: theme.colorScheme.onPrimaryContainer,
+                                    ),
+                                  );
+                                },
                               ),
                               Text(
                                 'Darul Ilmi — Offline First',
@@ -462,12 +470,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
           // ── 5. Tentang ───────────────────────────────────────────
           const _SectionHeader(title: 'Tentang'),
-          const ListTile(
-            leading: Icon(Icons.info_outline),
-            title: Text('Versi'),
-            trailing: Text(
-              '1.0.0',
-              style: TextStyle(fontWeight: FontWeight.bold),
+          ListTile(
+            leading: const Icon(Icons.info_outline),
+            title: const Text('Versi'),
+            trailing: FutureBuilder<String>(
+              future: AppInfo.version,
+              builder: (context, snapshot) {
+                return Text(
+                  snapshot.data ?? '...',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                );
+              },
             ),
           ),
           const ListTile(
