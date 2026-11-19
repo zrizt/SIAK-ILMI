@@ -85,4 +85,18 @@ class SiswaDao extends DatabaseAccessor<AppDatabase> with _$SiswaDaoMixin {
       SiswaCompanion(status: Value(newStatus)),
     );
   }
+
+  /// Updates [kelasId] and/or [status] of a student (used in grade promotion).
+  Future<void> updateKelasAndStatus(
+    int id, {
+    int? kelasId,
+    String? status,
+  }) async {
+    await (update(siswa)..where((s) => s.id.equals(id))).write(
+      SiswaCompanion(
+        kelasId: kelasId != null ? Value(kelasId) : const Value.absent(),
+        status: status != null ? Value(status) : const Value.absent(),
+      ),
+    );
+  }
 }

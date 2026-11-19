@@ -7,6 +7,7 @@ import '../../../core/theme/theme_provider.dart';
 import '../../backup_restore/data/backup_service.dart';
 import '../../backup_restore/presentation/backup_restore_screen.dart';
 import '../../receipts/data/thermal_printer_adapter.dart';
+import '../../students/presentation/grade_promotion_screen.dart';
 import 'operator_management_screen.dart';
 import 'pin_auth_screen.dart';
 
@@ -97,7 +98,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ],
             const SizedBox(height: 12),
             Text(
-              'Status Google Drive:',
+              'Status Supabase Cloud:',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Theme.of(ctx).colorScheme.outline,
@@ -106,8 +107,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 4),
             Text(
               backupResult.cloudUploaded
-                  ? 'Tersinkronisasi ke Google Drive'
-                  : (backupResult.cloudError ?? 'Google Drive belum tersambung'),
+                  ? 'Tersinkronisasi ke Supabase Storage'
+                  : (backupResult.cloudError ?? 'Supabase belum tersambung'),
               style: TextStyle(
                 color: backupResult.cloudUploaded ? Colors.green : Colors.orange,
               ),
@@ -418,6 +419,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               context,
               MaterialPageRoute(
                 builder: (_) => const OperatorManagementScreen(),
+              ),
+            ),
+          ),
+          const Divider(),
+
+          // ── Akademik & Siswa ───────────────────────────────────────────
+          const _SectionHeader(title: 'Akademik & Siswa'),
+          ListTile(
+            leading: const Icon(Icons.upgrade_rounded),
+            title: const Text('Kenaikan Kelas Otomatis'),
+            subtitle: const Text('Proses naik kelas dan kelulusan tahun ajaran baru'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const GradePromotionScreen(),
               ),
             ),
           ),

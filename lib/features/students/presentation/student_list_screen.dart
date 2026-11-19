@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -7,6 +8,7 @@ import '../../../core/database/app_database.dart';
 import '../../settings/presentation/pin_auth_screen.dart';
 import '../data/dapodik_parser.dart';
 import '../domain/student_providers.dart';
+import 'grade_promotion_screen.dart';
 import 'import_preview_screen.dart';
 import 'student_detail_screen.dart';
 import 'student_form_screen.dart';
@@ -26,6 +28,16 @@ class StudentListScreen extends ConsumerWidget {
         title: const Text('Data Siswa'),
         actions: [
           if (isAdmin) ...[
+            IconButton(
+              icon: const Icon(Icons.upgrade_rounded),
+              tooltip: 'Kenaikan Kelas',
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const GradePromotionScreen(),
+                ),
+              ),
+            ),
             IconButton(
               icon: const Icon(Icons.upload_file),
               tooltip: 'Import Dapodik',
@@ -75,11 +87,12 @@ class StudentListScreen extends ConsumerWidget {
   }
 
   void _showImportDialog(BuildContext context, WidgetRef ref) {
-    final pathController = TextEditingController();
     final yearController = TextEditingController(
       text: DateTime.now().year.toString(),
     );
 
+    File? selectedFile;
+    String? selectedFileName;
     bool isImporting = false;
     String? errorMessage;
 
@@ -88,27 +101,97 @@ class StudentListScreen extends ConsumerWidget {
       builder: (ctx) => StatefulBuilder(
         builder: (dialogCtx, setDialogState) {
           return AlertDialog(
-            title: const Text('Import Data Dapodik'),
+            title: const Text('Import Data Dapodik / PPDB'),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Pilih file .xlsx atau .csv dari penyimpanan internal/Downloads.\n'
+                    'Pilih file .xlsx atau .csv dari penyimpanan perangkat.\n'
                     'Kolom wajib: Nama, Tingkat (1-9), Jenis Kelamin (L/P).\n'
-                    'Kolom opsional: NISN, Kontak Wali.',
+                    'Kolom opsional: NISN, Kontak Wali, Status PPDB.',
                     style: TextStyle(fontSize: 13),
                   ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: pathController,
-                    decoration: const InputDecoration(
-                      labelText: 'Path File (.xlsx / .csv)',
-                      hintText: '/sdcard/Download/dapodik.xlsx',
-                      border: OutlineInputBorder(),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withValues(alpha: 0.08),
+                      border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.info_outline, size: 14, color: Colors.blue),
+                        SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'Kolom "status_ppdb": Lulus = diimpor, Tidak Lulus = dilewati otomatis.',
+                            style: TextStyle(fontSize: 11, color: Colors.blue),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                  const SizedBox(height: 16),
+
+                  // ── File Picker Button ──
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: isImporting
+                          ? null
+                          : () async {
+                              final result =
+                                  await FilePicker.pickFiles(
+                                type: FileType.custom,
+                                allowedExtensions: ['xlsx', 'xls', 'csv'],
+                                allowMultiple: false,
+                              );
+                              if (result != null &&
+                                  result.files.isNotEmpty) {
+                                final path = result.files.single.path;
+                                if (path != null) {
+                                  setDialogState(() {
+                                    selectedFile = File(path);
+                                    selectedFileName =
+                                        result.files.single.name;
+                                    errorMessage = null;
+                                  });
+                                }
+                              }
+                            },
+                      icon: const Icon(Icons.folder_open_outlined),
+                      label: Text(
+                        selectedFileName ?? 'Pilih File (.xlsx / .csv)',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+
+                  if (selectedFile != null) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(Icons.check_circle_outline,
+                            size: 14, color: Colors.green),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            selectedFileName!,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.green,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+
                   const SizedBox(height: 12),
                   TextField(
                     controller: yearController,
@@ -119,6 +202,7 @@ class StudentListScreen extends ConsumerWidget {
                       border: OutlineInputBorder(),
                     ),
                   ),
+
                   if (errorMessage != null) ...[
                     const SizedBox(height: 12),
                     Text(
@@ -145,24 +229,16 @@ class StudentListScreen extends ConsumerWidget {
                 onPressed: isImporting
                     ? null
                     : () async {
-                        final rawPath = pathController.text.trim();
-                        final rawYear = int.tryParse(yearController.text.trim()) ??
-                            DateTime.now().year;
-
-                        if (rawPath.isEmpty) {
+                        if (selectedFile == null) {
                           setDialogState(() {
-                            errorMessage = 'Silakan masukkan path file.';
+                            errorMessage = 'Silakan pilih file terlebih dahulu.';
                           });
                           return;
                         }
 
-                        final file = File(rawPath);
-                        if (!file.existsSync()) {
-                          setDialogState(() {
-                            errorMessage = 'File tidak ditemukan pada path yang diberikan.';
-                          });
-                          return;
-                        }
+                        final rawYear =
+                            int.tryParse(yearController.text.trim()) ??
+                                DateTime.now().year;
 
                         setDialogState(() {
                           isImporting = true;
@@ -171,7 +247,8 @@ class StudentListScreen extends ConsumerWidget {
 
                         try {
                           final parser = ref.read(dapodikParserProvider);
-                          final result = await parser.parseFile(file, rawYear);
+                          final result =
+                              await parser.parseFile(selectedFile!, rawYear);
 
                           if (ctx.mounted) {
                             Navigator.pop(ctx);

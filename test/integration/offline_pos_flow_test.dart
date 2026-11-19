@@ -296,7 +296,7 @@ void main() {
     });
 
     test('EC-03: Offline backup service handles local backup without throwing', () async {
-      const backupService = BackupServiceImpl(driveEnabled: false);
+      const backupService = BackupServiceImpl();
       final result = await backupService.performBackup();
 
       // In unit test environment, local db file path may or may not exist,

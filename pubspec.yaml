@@ -1,7 +1,7 @@
 name: siak_ilmi
 description: Sistem Informasi Administrasi dan Keuangan Darul Ilmi - Mobile-first offline-first student administration and financial management system.
 publish_to: 'none'
-version: 1.0.1+2
+version: 1.1.0+1
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -35,11 +35,6 @@ dependencies:
   blue_thermal_printer: ^1.1.2
   esc_pos_utils_plus: ^2.0.2
 
-  # Google Drive Backup
-  google_sign_in: ^6.2.1
-  googleapis: ^13.2.0
-  http: ^1.2.1
-
   # Archiving / Compression (local .zip backup)
   archive: ^3.6.1
 
@@ -56,6 +51,8 @@ dependencies:
   gap: ^3.0.1
   flutter_slidable: ^3.1.0
   package_info_plus: ^9.0.1
+  file_picker: ^11.0.3
+  supabase_flutter: ^2.18.3
 
 dev_dependencies:
   flutter_test:

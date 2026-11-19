@@ -201,7 +201,7 @@ class _PinDots extends StatelessWidget {
                 ? Theme.of(context).colorScheme.error
                 : isFilled
                     ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5),
+                    : Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
           ),
         );
       }),

@@ -15,10 +15,14 @@ class ParseResult {
     required this.rows,
     required this.duplicateNisns,
     required this.errorRows,
+    this.skippedTidakLulusCount = 0,
   });
   final List<DapodikImportRow> rows;
   final List<String> duplicateNisns;
   final List<String> errorRows;
+
+  /// Number of rows skipped because status_ppdb == 'Tidak Lulus'.
+  final int skippedTidakLulusCount;
 }
 
 /// Parses Dapodik export files (.xlsx or .csv) into [DapodikImportRow] lists.
@@ -86,9 +90,17 @@ class DapodikParser {
     final tingkatIdx = _findCol(headers, ['tingkat', 'kelas', 'grade', 'level']);
     final kontakIdx =
         _findCol(headers, ['no_hp_wali', 'kontak_wali', 'phone', 'hp']);
+    final statusIdx = _findCol(headers, [
+      'status_ppdb',
+      'status',
+      'hasil',
+      'keterangan',
+      'hasil_ppdb',
+    ]);
 
     final result = <DapodikImportRow>[];
     final errors = <String>[];
+    var skippedTidakLulus = 0;
 
     for (final row in dataRows) {
       String get(int? idx) =>
@@ -98,6 +110,20 @@ class DapodikParser {
       if (nama.isEmpty) {
         errors.add('Empty name in row: $row');
         continue;
+      }
+
+      // Filter by PPDB admission status if column is present
+      if (statusIdx != null) {
+        final statusRaw = get(statusIdx).toUpperCase();
+        // Skip rows explicitly marked as not accepted
+        if (statusRaw.contains('TIDAK') ||
+            statusRaw == 'GAGAL' ||
+            statusRaw == 'DITOLAK' ||
+            statusRaw == 'REJECT' ||
+            statusRaw == 'FAILED') {
+          skippedTidakLulus++;
+          continue;
+        }
       }
 
       final tingkatStr = get(tingkatIdx);
@@ -132,7 +158,12 @@ class DapodikParser {
       ));
     }
 
-    return ParseResult(rows: result, duplicateNisns: [], errorRows: errors);
+    return ParseResult(
+      rows: result,
+      duplicateNisns: [],
+      errorRows: errors,
+      skippedTidakLulusCount: skippedTidakLulus,
+    );
   }
 
   int? _findCol(List<String> headers, List<String> candidates) {
@@ -150,7 +181,7 @@ class DapodikParser {
   }
 
   ParseResult _emptyResult() =>
-      const ParseResult(rows: [], duplicateNisns: [], errorRows: []);
+      const ParseResult(rows: [], duplicateNisns: [], errorRows: [], skippedTidakLulusCount: 0);
 }
 
 extension _StringExt on String {

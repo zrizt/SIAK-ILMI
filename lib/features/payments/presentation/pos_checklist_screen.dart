@@ -9,6 +9,7 @@ import '../../../core/database/daos/pembayaran_dao.dart';
 import '../../../core/database/daos/siswa_dao.dart';
 import '../../../core/formatters/currency_formatter.dart';
 import '../../../core/security/operator_service.dart';
+import '../../../core/utils/bill_semester_helper.dart';
 import '../../receipts/data/receipt_model_factory.dart';
 import '../../receipts/presentation/receipt_actions_sheet.dart';
 import '../../settings/presentation/pin_auth_screen.dart';
@@ -92,6 +93,36 @@ class _PosChecklistScreenState extends ConsumerState<PosChecklistScreen>
   final List<ChecklistItem> _checklistItems = [];
   String _metodeBayar = 'Tunai';
   bool _isProcessing = false;
+
+  int? _selectedSemester;
+  String? _selectedAcademicYear;
+
+  List<ChecklistItem> get _filteredChecklistItems {
+    return _checklistItems.where((c) {
+      if (_selectedSemester != null) {
+        final sem = BillSemesterHelper.getSemester(c.item.namaItem);
+        if (_selectedSemester == -1) {
+          if (sem != null) return false;
+        } else {
+          if (sem != _selectedSemester) return false;
+        }
+      }
+      if (_selectedAcademicYear != null) {
+        final ta = BillSemesterHelper.getAcademicYear(c.item.namaItem);
+        if (ta != _selectedAcademicYear) return false;
+      }
+      return true;
+    }).toList();
+  }
+
+  Set<String> get _availableAcademicYears {
+    final tas = <String>{};
+    for (final c in _checklistItems) {
+      final ta = BillSemesterHelper.getAcademicYear(c.item.namaItem);
+      if (ta != null) tas.add(ta);
+    }
+    return tas;
+  }
 
   @override
   void initState() {
@@ -329,13 +360,20 @@ class _PosChecklistScreenState extends ConsumerState<PosChecklistScreen>
               if (items.isEmpty) {
                 return const _NoUnpaidBillsState();
               }
+              final filteredItems = _filteredChecklistItems;
               return _ChecklistTab(
-                checklistItems: _checklistItems,
+                checklistItems: filteredItems,
+                allChecklistItems: _checklistItems,
+                selectedSemester: _selectedSemester,
+                onSemesterChanged: (s) => setState(() => _selectedSemester = s),
+                selectedAcademicYear: _selectedAcademicYear,
+                onAcademicYearChanged: (ta) =>
+                    setState(() => _selectedAcademicYear = ta),
+                availableAcademicYears: _availableAcademicYears,
                 totalBayar: _totalBayar,
                 metodeBayar: _metodeBayar,
                 isProcessing: _isProcessing,
-                onMetodeChanged: (m) =>
-                    setState(() => _metodeBayar = m),
+                onMetodeChanged: (m) => setState(() => _metodeBayar = m),
                 onToggleItem: (item) =>
                     setState(() => item.isChecked = !item.isChecked),
                 onTogglePartial: (item) =>
@@ -343,14 +381,14 @@ class _PosChecklistScreenState extends ConsumerState<PosChecklistScreen>
                 onConfirm: _confirmPayment,
                 onRebuild: () => setState(() {}),
                 onSelectAll: () => setState(() {
-                  for (final c in _checklistItems) {
+                  for (final c in filteredItems) {
                     c.isChecked = true;
                     c.isPartial = false;
                     c.partialAmountCtrl.clear();
                   }
                 }),
                 onSelectNone: () => setState(() {
-                  for (final c in _checklistItems) {
+                  for (final c in filteredItems) {
                     c.isChecked = false;
                     c.isPartial = false;
                     c.partialAmountCtrl.clear();
@@ -387,6 +425,12 @@ class _PosChecklistScreenState extends ConsumerState<PosChecklistScreen>
 class _ChecklistTab extends StatelessWidget {
   const _ChecklistTab({
     required this.checklistItems,
+    required this.allChecklistItems,
+    required this.selectedSemester,
+    required this.onSemesterChanged,
+    required this.selectedAcademicYear,
+    required this.onAcademicYearChanged,
+    required this.availableAcademicYears,
     required this.totalBayar,
     required this.metodeBayar,
     required this.isProcessing,
@@ -399,6 +443,12 @@ class _ChecklistTab extends StatelessWidget {
     required this.onSelectNone,
   });
   final List<ChecklistItem> checklistItems;
+  final List<ChecklistItem> allChecklistItems;
+  final int? selectedSemester;
+  final void Function(int?) onSemesterChanged;
+  final String? selectedAcademicYear;
+  final void Function(String?) onAcademicYearChanged;
+  final Set<String> availableAcademicYears;
   final int totalBayar;
   final String metodeBayar;
   final bool isProcessing;
@@ -410,7 +460,8 @@ class _ChecklistTab extends StatelessWidget {
   final VoidCallback onSelectAll;
   final VoidCallback onSelectNone;
 
-  bool get _allChecked => checklistItems.every((i) => i.isChecked);
+  bool get _allChecked =>
+      checklistItems.isNotEmpty && checklistItems.every((i) => i.isChecked);
 
   @override
   Widget build(BuildContext context) {
@@ -420,9 +471,91 @@ class _ChecklistTab extends StatelessWidget {
 
     return Column(
       children: [
-        // ── Batch select toolbar ───────────────────────────────────────────
+        // ── Semester & Academic Year Filter Bar ────────────────────────────
         Container(
           color: cs.surfaceContainerLow,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    FilterChip(
+                      label: Text('Semua (${allChecklistItems.length})'),
+                      selected: selectedSemester == null,
+                      onSelected: (_) => onSemesterChanged(null),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    const SizedBox(width: 6),
+                    FilterChip(
+                      label: const Text('Semester 1 (Ganjil)'),
+                      selected: selectedSemester == 1,
+                      onSelected: (_) =>
+                          onSemesterChanged(selectedSemester == 1 ? null : 1),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    const SizedBox(width: 6),
+                    FilterChip(
+                      label: const Text('Semester 2 (Genap)'),
+                      selected: selectedSemester == 2,
+                      onSelected: (_) =>
+                          onSemesterChanged(selectedSemester == 2 ? null : 2),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    const SizedBox(width: 6),
+                    FilterChip(
+                      label: const Text('Non-SPP / Lainnya'),
+                      selected: selectedSemester == 0,
+                      onSelected: (_) =>
+                          onSemesterChanged(selectedSemester == 0 ? null : 0),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
+                ),
+              ),
+              if (availableAcademicYears.length > 1) ...[
+                const SizedBox(height: 6),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      Text(
+                        'TA: ',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                      ChoiceChip(
+                        label: const Text('Semua TA'),
+                        selected: selectedAcademicYear == null,
+                        onSelected: (_) => onAcademicYearChanged(null),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      for (final ta in availableAcademicYears) ...[
+                        const SizedBox(width: 6),
+                        ChoiceChip(
+                          label: Text(ta),
+                          selected: selectedAcademicYear == ta,
+                          onSelected: (_) => onAcademicYearChanged(
+                            selectedAcademicYear == ta ? null : ta,
+                          ),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+
+        // ── Batch select toolbar ───────────────────────────────────────────
+        Container(
+          color: cs.surfaceContainerLowest,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Row(
             children: [
@@ -436,15 +569,13 @@ class _ChecklistTab extends StatelessWidget {
               ),
               const Spacer(),
               TextButton.icon(
-                onPressed: isProcessing
+                onPressed: (isProcessing || checklistItems.isEmpty)
                     ? null
                     : _allChecked
                         ? onSelectNone
                         : onSelectAll,
                 icon: Icon(
-                  _allChecked
-                      ? Icons.deselect
-                      : Icons.select_all,
+                  _allChecked ? Icons.deselect : Icons.select_all,
                   size: 16,
                 ),
                 label: Text(_allChecked ? 'Batal Semua' : 'Pilih Semua'),
@@ -458,17 +589,47 @@ class _ChecklistTab extends StatelessWidget {
         ),
 
         Expanded(
-          child: ListView(
-            padding: const EdgeInsets.all(12),
-            children: checklistItems
-                .map((item) => _ChecklistItemTile(
-                      checklistItem: item,
-                      onToggle: () => onToggleItem(item),
-                      onTogglePartial: () => onTogglePartial(item),
-                      onRebuild: onRebuild,
-                    ))
-                .toList(),
-          ),
+          child: checklistItems.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.filter_list_off,
+                            size: 48, color: cs.outline),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Tidak ada tagihan yang cocok dengan filter',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: cs.onSurfaceVariant,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            onSemesterChanged(null);
+                            onAcademicYearChanged(null);
+                          },
+                          icon: const Icon(Icons.refresh, size: 16),
+                          label: const Text('Reset Filter'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : ListView(
+                  padding: const EdgeInsets.all(12),
+                  children: checklistItems
+                      .map((item) => _ChecklistItemTile(
+                            checklistItem: item,
+                            onToggle: () => onToggleItem(item),
+                            onTogglePartial: () => onTogglePartial(item),
+                            onRebuild: onRebuild,
+                          ))
+                      .toList(),
+                ),
         ),
         _PaymentSummaryBar(
           totalBayar: totalBayar,
@@ -496,8 +657,11 @@ class _ChecklistItemTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     final item = checklistItem.item;
     final remaining = checklistItem.remainingArrears;
+    final semLabel = BillSemesterHelper.getSemesterLabel(item.namaItem);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -506,9 +670,33 @@ class _ChecklistItemTile extends StatelessWidget {
           CheckboxListTile(
             value: checklistItem.isChecked,
             onChanged: (_) => onToggle(),
-            title: Text(
-              item.namaItem,
-              style: const TextStyle(fontWeight: FontWeight.w600),
+            title: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    item.namaItem,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+                if (semLabel != 'Lainnya')
+                  Container(
+                    margin: const EdgeInsets.only(left: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: cs.primaryContainer,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      semLabel,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: cs.onPrimaryContainer,
+                      ),
+                    ),
+                  ),
+              ],
             ),
             subtitle: item.terbayar > 0
                 ? Text(
@@ -521,7 +709,7 @@ class _ChecklistItemTile extends StatelessWidget {
               CurrencyFormatter.format(remaining),
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
+                color: theme.colorScheme.primary,
               ),
             ),
           ),

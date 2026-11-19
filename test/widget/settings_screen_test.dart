@@ -64,11 +64,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Pengaturan'), findsWidgets);
-    expect(find.text('SIAK-ILMI v1.0.0'), findsOneWidget);
+    expect(find.textContaining('SIAK-ILMI v'), findsOneWidget);
     expect(find.text('AKUN OPERATOR'), findsOneWidget);
 
     // Scroll to see remaining tiles
-    await tester.drag(find.byType(ListView).last, const Offset(0, -300));
+    await tester.drag(find.byType(ListView).last, const Offset(0, -500));
     await tester.pumpAndSettle();
 
     expect(find.text('Mode Tampilan'), findsOneWidget);

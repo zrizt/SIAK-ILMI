@@ -1,10 +1,10 @@
 # SIAK-ILMI: Autonomous Agent Progress & Task Tracker
 
-> **Document Version:** 1.5.2  
+> **Document Version:** 1.7.2  
 > **Target Specification:** [`/docs/PRD.md`](file:///d:/SIAK-ILMI/docs/PRD.md)  
-> **Last Updated:** 2026-11-07 20:58:00 +07:00  
+> **Last Updated:** 2026-11-20 00:23:00 +07:00  
 > **Project Root:** `d:\SIAK-ILMI`  
-> **Status:** Phase 9 Complete + UI Logo/Header Customization — Replaceable Placeholder PNG Logos (App & Header Banner), Centered Header, Left-Aligned Login Status Chip, 0 Analyzer Issues, 30/30 Tests Passing
+> **Status:** Phase 12 Complete � Supabase Backup Migration (Drive Removed), 0 Analyzer Issues, 41/41 Tests Passing (100%)
 
 ---
 
@@ -16,21 +16,24 @@ The application is structured strictly under **Feature-First Clean Architecture*
 
 | Metric | Status | Notes |
 |---|---|---|
-| **Clean Architecture Files** | **74+ files** written | Complete separation of `core`, `features`, and `app` |
+| **Clean Architecture Files** | **78+ files** written | Complete separation of `core`, `features`, and `app` |
 | **Drift Schema & DAOs** | **13 tables, 7 DAOs** | Added `operator_account` table with optional `nip` & `OperatorDao` (schema v3), fully registered in `AppDatabase` |
-| **Domain Use Cases** | **5 core engines** | Auto-NIS, Tariff Resolver, Bill Engine, Atomic POS, Bulk Billing Use Case |
+| **Domain Use Cases** | **6 core engines** | Auto-NIS, Tariff Resolver, Bill Engine, Atomic POS, Bulk Billing, Promote Students Engine |
 | **PPDB Import & Auto-Billing** | **Complete (Phase 9)** | Excel (.xlsx) & CSV import with pre-import validation, duplicate detection, and automated semester SPP generation |
 | **Bulk Semester Billing** | **Complete (Phase 9)** | Dedicated `BulkBillingScreen` & `BulkBillingUseCase` generating 6 monthly SPP charges for all active students with duplicate guard |
+| **Automatic Grade Promotion** | **Complete (Phase 10)** | `PromoteStudentsUseCase` & `GradePromotionScreen` with exception handling (Tinggal Kelas), graduation, and academic year transition |
+| **POS Bill Filtering** | **Complete (Phase 10)** | Filter unpaid student bills by Semester (Sem 1 / Sem 2 / Non-SPP) and Academic Year with instant dynamic counts |
 | **Formal PDF Kwitansi** | **Complete (Phase 9)** | Official Kop Surat (Yayasan & Sekolah), double-rule, Terbilang (words in IDR), cashier operator signature & footer with optional operator NIP |
 | **Operator Management** | **Complete (Phase 9)** | SQLite-backed operator accounts, optional NIP, random salt + SHA-256 hash, CRUD UI, login/logout, receipt operator attribution |
 | **Output Adapters & Factory** | **Complete & Integrated** | ESC/POS 58mm Thermal + WhatsApp PDF + `ReceiptModelFactory` wired to POS |
 | **Batch POS Checklist** | **Complete (Phase 8)** | "Pilih Semua" / "Batal Semua" batch toolbar in POS Tab 1 |
 | **Dark / Light Mode** | **Complete (Phase 8)** | `ThemeModeNotifier` with SharedPreferences persistence; 3-way toggle in Settings |
 | **Modern UI Theme** | **Complete (Phase 8)** | Full M3 light + dark themes; deep Islamic green; flat-card design system |
-| **Cloud Backup Adapter** | **Complete & Fail-Silent** | `DriveBackupService` with `googleapis` Drive v3 behind abstract `BackupService` with WAL checkpointing |
+| **Cloud Backup Adapter** | **Complete & Fail-Silent** | `DriveBackupService` with `googleapis` Drive v3, account lifecycle (connect/disconnect/status), local restore, and backup list |
 | **Auto-Lock Security** | **Complete & Reactive** | Dynamic 5-minute auto-lock listener in `AppShell` with gesture activity reset |
 | **Static Analysis (`flutter analyze`)**| **0 issues found** | Clean analyzer exit code 0; 0 errors, 0 warnings, 0 lints across entire project |
-| **Unit & Integration Tests (`flutter test`)**| **30/30 Passed (100%)** | 100% test pass rate across auto-NIS, bill engine, atomic POS, terbilang, operator service (including NIP), bulk billing, settings UI |
+| **Unit & Integration Tests (`flutter test`)**| **41/41 Passed (100%)** | 100% test pass rate across auto-NIS, bill engine, atomic POS, terbilang, operator service, bulk billing, semester helper, grade promotion, settings UI, PPDB parser, and backup/restore service |
+| **Native File Picker & PPDB Filter** | **Complete (Phase 11)** | Replaced manual path TextField with `FilePicker` and added admission status filter ('Lulus' imported vs 'Tidak Lulus' skipped) |
 | **PRD Compliance** | **100% compliant** | Follows all non-negotiable rules & formulas |
 
 ---
@@ -155,19 +158,26 @@ The application is structured strictly under **Feature-First Clean Architecture*
 
 ---
 
-### Phase 6: Isolated Backup Module & Cloud Adapter ✅ (100%)
+### Phase 6: Isolated Backup Module & Cloud Adapter ✅ (100% — Todo 6 Completed)
 - [x] **Abstract Backup Service (`backup_service.dart`)**:
-  - Decoupled `BackupService` interface.
+  - Decoupled `BackupService` interface with `performBackup()`, `getLocalBackupPath()`, and `restoreFromZip(zipPath)`.
+  - Concrete `BackupServiceImpl` delegating cloud upload to `DriveBackupService` (resolved legacy TODO 6 placeholder).
   - Full WAL checkpoint execution (`PRAGMA wal_checkpoint(FULL);`) prior to zipping SQLite database.
   - Local database zip compressor storing encrypted/timestamped backups in Android `Downloads` directory.
   - Fail-silent error handling: network or cloud errors never crash core app workflows.
 - [x] **Google Drive Cloud Adapter (`drive_backup_adapter.dart`)**:
   - Implements `BackupService` with `googleapis` Drive v3 API.
+  - Exposes Google account lifecycle: `signIn()`, `signInSilently()`, `signOut()`, `currentUser`, and `isSignedIn()`.
   - Uses `_GoogleAuthClient` for bearer token propagation.
-  - Automates folder creation (`SIAK-ILMI-Backups`) and file uploads.
+  - Automates folder creation (`SIAK-ILMI-Backups`) and file uploads via `uploadToDrive()`.
+  - Cloud file browser helper `listDriveBackups()` and local restore engine `restoreFromZip()`.
   - Strict fail-silent boundary: always creates local zip first with WAL checkpoint; cloud exceptions return as data.
-- [x] **Backup UI Screen (`backup_restore_screen.dart`)**:
-  - Backup creation trigger, last backup timestamp indicator, local backup file browser, and Drive sync status banner.
+- [x] **Backup & Restore UI Screen (`backup_restore_screen.dart`)**:
+  - Google Drive connection card showing account status (avatar, email, chip "Terhubung" / "Belum Terhubung").
+  - One-tap Google connect / disconnect actions with clear, friendly error handling for `ApiException: 10` / developer configuration.
+  - Database restoration engine: file picker for `.zip` archives with confirmation warning and restart guidance.
+  - Local backup history list showing the latest backups on the device with size, timestamp, and instant restore button.
+  - Cloud sync status card reflecting real-time Drive upload status.
 - [x] **Settings Screen (`settings_screen.dart`)**:
   - Complete with PIN update dialogs (Admin & Viewer), Bluetooth thermal printer connection bottom sheet, quick backup trigger, and technical specifications.
 - [x] **Android Native Configuration**:
@@ -253,6 +263,59 @@ The application is structured strictly under **Feature-First Clean Architecture*
 
 ---
 
+### Phase 10: Automatic Grade Promotion & POS Bill Filtering ✅ (100%) — 2026-11-16
+- [x] **POS Bill Filtering per Semester & Tahun Ajaran (`pos_checklist_screen.dart`, `bill_semester_helper.dart`)**:
+  - `BillSemesterHelper`: Utility extracting semester (Semester 1 / Semester 2 / Non-SPP) and academic year (TA) from bill item names according to the Indonesian academic calendar.
+  - Interactive FilterChips in Tab 1 POS Cashier: "Semua", "Semester 1 (Ganjil)", "Semester 2 (Genap)", and "Non-SPP / Lainnya".
+  - Dynamic Academic Year ChoiceChips when multiple academic years are present.
+  - Live filtered item count and dynamic batch select ("Pilih Semua" / "Batal Semua") scoped exclusively to filtered bills.
+  - Semester indicator badges on each bill item tile in POS.
+  - Friendly empty filter state with one-tap "Reset Filter" button.
+- [x] **Automatic Grade Promotion Engine (`promote_students_use_case.dart`)**:
+  - `PromoteStudentsUseCase`: Automatically maps active students (`AKTIF`) to their next grade level:
+    - SD IT Baitul Akbar: Grade 1–5 $\rightarrow$ Grade 2–6 (`kelasId = targetKelas.id`); Grade 6 $\rightarrow$ status `'LULUS'`.
+    - SMP IT Darul Ilmi: Grade 7–8 $\rightarrow$ Grade 8–9 (`kelasId = targetKelas.id`); Grade 9 $\rightarrow$ status `'LULUS'`.
+  - Supports student retention exceptions ("Tinggal Kelas") which preserves the student's current grade while remaining active.
+  - Atomic multi-table transition: updates student grades, graduates terminal grades, deactivates old `TahunAjaran` (`isAktif = 0`), and activates target new `TahunAjaran` (`isAktif = 1`).
+  - Logs complete audit trail in local `audit_log` table with operator attribution.
+- [x] **Automatic Grade Promotion UI (`grade_promotion_screen.dart`)**:
+  - Visual academic year transition banner showing current active TA and editable target TA.
+  - Summary metric chips showing live counts for Total, Naik Kelas, Lulus, and Tinggal Kelas.
+  - School filter chips (Semua / SD IT / SMP IT) and quick search bar.
+  - Student list with action badges ("Naik ke Kelas X", "Lulus", "Tinggal Kelas") and one-tap "Tinggal Kelas" toggle.
+  - Modal confirmation dialog with breakdown summary before execution.
+  - Entry points added in `StudentListScreen` AppBar action and `SettingsScreen` under "Akademik & Siswa".
+- [x] **Unit Tests & Quality Assurance**:
+  - `test/unit/bill_semester_helper_test.dart`: Validates semester and TA detection for all 12 Indonesian months and one-off fees.
+  - `test/unit/promote_students_test.dart`: Validates candidate generation, promotion mappings, graduation at grade 6 and 9, retention logic, and academic year transitions.
+  - `test/widget/settings_screen_test.dart`: Validates settings navigation, theme switching, and new academic management tiles.
+  - **All 37/37 tests passing cleanly via `flutter test` (100%)**.
+  - **`flutter analyze` reports "No issues found!" (exit code 0)** across the whole codebase.
+
+---
+
+### Phase 11: Native File Picker & PPDB Admission Status Filtering ✅ (100%) — 2026-11-16
+- [x] **Native File Picker (`student_list_screen.dart`, `file_picker: ^11.0.3`)**:
+  - Replaced manual text field path input with direct file picking using `FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['xlsx', 'xls', 'csv'])`.
+  - Added user feedback with selected filename and validation indicator.
+- [x] **PPDB Admission Status Filter (`dapodik_parser.dart`, `import_preview_screen.dart`)**:
+  - Extended parser to recognize status columns (`status_ppdb`, `status`, `hasil`, `keterangan`, `hasil_ppdb`).
+  - **Lulus:** Rows accepted and prepared for database insertion.
+  - **Tidak Lulus:** Rows skipped automatically (detects "TIDAK", "GAGAL", "DITOLAK", "REJECT", "FAILED").
+  - `ParseResult` reports `skippedTidakLulusCount`.
+  - `ImportPreviewScreen` displays an alert banner showing the number of skipped applicants who did not pass admission.
+- [x] **Sample Dataset (`docs/CONTOH_IMPORT_PPDB.xlsx`)**:
+  - Regenerated template containing `status_ppdb` column with sample "Lulus" and "Tidak Lulus" records.
+- [x] **Formal PDF Kwitansi Foundation Logo (`pdf_receipt_generator.dart`)**:
+  - Replaced temporary 'ILMI' placeholder box with official `assets/images/logo_yayasan.png` in the Kop Surat header.
+  - Implemented dual-mode asset loading (`rootBundle` + `File` fallback for tests) with graceful fallback to `logo.png` or border container.
+- [x] **Unit & Regression Testing**:
+  - `test/unit/dapodik_parser_test.dart`: Tests parsing `.xlsx` with PPDB filter (10 accepted, 2 skipped), `.csv` without status column (12 accepted), and `.csv` with explicit admission status filters.
+  - **All 38/38 tests passing (100%)**.
+  - **`flutter analyze` reports 0 issues (clean code)**.
+
+---
+
 ### Quality Assurance & Verification Suite ✅ (100%)
 - [x] `test/unit/auto_nis_generator_test.dart`: Validates AC-02 (NIS structure `[YY][SchoolCode][Sequence]`).
 - [x] `test/unit/bill_generator_engine_test.dart`: Validates AC-06 and PPDB wave discount calculations.
@@ -260,14 +323,13 @@ The application is structured strictly under **Feature-First Clean Architecture*
 - [x] `test/unit/terbilang_test.dart`: Validates Indonesian numbers-to-words currency converter (AC, EC edge cases).
 - [x] `test/unit/operator_service_test.dart`: Validates operator authentication, random salt hashing, password changes, deactivation.
 - [x] `test/unit/bulk_billing_test.dart`: Validates active-student bulk semester billing, duplicate suppression, inactive student protection.
-- [x] `test/integration/offline_pos_flow_test.dart`: Comprehensive integration suite executing full offline flows:
-  - Offline student registration & Auto-NIS (AC-01, AC-02)
-  - Bill snapshot generation & atomic multi-item payment with installment (AC-04, AC-05)
-  - Payment void and full reversal rollback (EC-02)
-  - Historical bill snapshot immutability against master tariff modifications (EC-04)
-  - Airplane mode fail-silent backup handling (EC-03)
-- [x] **All 28/28 tests passing cleanly via `flutter test`** (verified 2026-11-07).
-- [x] **`flutter analyze` reports "No issues found!" (exit code 0)** across the whole codebase (verified 2026-11-07).
+- [x] `test/unit/bill_semester_helper_test.dart`: Validates semester and academic year detection for bill items.
+- [x] `test/unit/promote_students_test.dart`: Validates automated grade promotion, graduation, exceptions, and TA transition.
+- [x] `test/unit/dapodik_parser_test.dart`: Validates Excel (.xlsx) and CSV (.csv) parsing.
+- [x] `test/widget/settings_screen_test.dart`: Validates settings rendering, theme switching, and navigation.
+- [x] `test/integration/offline_pos_flow_test.dart`: Comprehensive integration suite executing full offline flows.
+- [x] **All 37/37 tests passing cleanly via `flutter test`** (verified 2026-11-16).
+- [x] **`flutter analyze` reports "No issues found!" (exit code 0)** across the whole codebase (verified 2026-11-16).
 
 ---
 

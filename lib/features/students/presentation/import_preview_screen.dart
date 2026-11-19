@@ -259,6 +259,7 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
     final errorRows = widget.parseResult.errorRows;
     final duplicateCount = _existingNisns.length;
     final validToImport = totalRows - duplicateCount;
+    final skippedTidakLulus = widget.parseResult.skippedTidakLulusCount;
 
     return Scaffold(
       appBar: AppBar(
@@ -364,6 +365,36 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
+
+                // Skipped "Tidak Lulus" notice
+                if (skippedTidakLulus > 0) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.1),
+                      border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.person_remove_outlined,
+                            size: 18, color: Colors.orange),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '$skippedTidakLulus siswa dilewati karena status PPDB "Tidak Lulus".',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.orange,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
 
                 // Auto-Billing Configuration Card
                 Card(

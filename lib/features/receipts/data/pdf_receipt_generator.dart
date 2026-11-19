@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
@@ -30,6 +31,27 @@ class PdfReceiptGenerator {
     final fontBold = await PdfGoogleFonts.notoSansBold();
     final fontItalic = await PdfGoogleFonts.notoSansItalic();
 
+    // Load logo with priority: logo_yayasan.png -> logo.png -> fallback
+    pw.MemoryImage? logoImage;
+    for (final path in [
+      'assets/images/logo_yayasan.png',
+      'assets/images/logo.png',
+    ]) {
+      try {
+        final byteData = await rootBundle.load(path);
+        logoImage = pw.MemoryImage(byteData.buffer.asUint8List());
+        break;
+      } catch (_) {
+        try {
+          final file = File(path);
+          if (file.existsSync()) {
+            logoImage = pw.MemoryImage(file.readAsBytesSync());
+            break;
+          }
+        } catch (_) {}
+      }
+    }
+
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.a5,
@@ -45,32 +67,39 @@ class PdfReceiptGenerator {
               pw.Row(
                 crossAxisAlignment: pw.CrossAxisAlignment.center,
                 children: [
-                  // Placeholder for School Emblem / Logo
-                  pw.Container(
-                    width: 44,
-                    height: 44,
-                    decoration: pw.BoxDecoration(
-                      border: pw.Border.all(color: PdfColors.green800, width: 1.5),
-                      borderRadius: pw.BorderRadius.circular(6),
-                    ),
-                    child: pw.Center(
-                      child: pw.Text(
-                        'ILMI',
-                        style: pw.TextStyle(
-                          font: fontBold,
-                          fontSize: 10,
-                          color: PdfColors.green900,
+                  // School / Yayasan Logo
+                  if (logoImage != null)
+                    pw.Container(
+                      width: 68,
+                      height: 68,
+                      child: pw.Image(logoImage, fit: pw.BoxFit.contain),
+                    )
+                  else
+                    pw.Container(
+                      width: 44,
+                      height: 44,
+                      decoration: pw.BoxDecoration(
+                        border: pw.Border.all(color: PdfColors.green800, width: 1.5),
+                        borderRadius: pw.BorderRadius.circular(6),
+                      ),
+                      child: pw.Center(
+                        child: pw.Text(
+                          'ILMI',
+                          style: pw.TextStyle(
+                            font: fontBold,
+                            fontSize: 10,
+                            color: PdfColors.green900,
+                          ),
                         ),
                       ),
                     ),
-                  ),
                   pw.SizedBox(width: 12),
                   pw.Expanded(
                     child: pw.Column(
                       crossAxisAlignment: pw.CrossAxisAlignment.center,
                       children: [
                         pw.Text(
-                          'YAYASAN PENDIDIKAN ISLAM DARUL ILMI',
+                          'YAYASAN BAITUL AKBAR PARABEK',
                           style: pw.TextStyle(
                             font: fontBold,
                             fontSize: 9,
@@ -90,17 +119,18 @@ class PdfReceiptGenerator {
                         ),
                         pw.SizedBox(height: 2),
                         pw.Text(
-                          'Jl. Parabek, Ladang Laweh, Kec. Banuhampu, Kab. Agam, Sumatera Barat',
+                          'Jalan Jombang Astek, No.86, Kel. Lengkong Gudang Timur, '
+                          'Kec. Serpong, Kota Tangerang Selatan, 15318',
                           style: const pw.TextStyle(
-                            fontSize: 7.5,
+                            fontSize: 6.5,
                             color: PdfColors.grey700,
                           ),
                           textAlign: pw.TextAlign.center,
                         ),
                         pw.Text(
-                          'Telp/WA: 0812-6789-0123 • Email: bendahara@darulilmi.sch.id',
+                          'Telp: 021-5387768. • Email: yysn.baitulakbarparabek@gmail.com',
                           style: const pw.TextStyle(
-                            fontSize: 7,
+                            fontSize: 6,
                             color: PdfColors.grey600,
                           ),
                           textAlign: pw.TextAlign.center,
@@ -264,7 +294,7 @@ class PdfReceiptGenerator {
                     crossAxisAlignment: pw.CrossAxisAlignment.center,
                     children: [
                       pw.Text(
-                        'Banuhampu, ${_dateOnlyFormat.format(receipt.tanggalBayar)}',
+                        'Tangerang Selatan, ${_dateOnlyFormat.format(receipt.tanggalBayar)}',
                         style: pw.TextStyle(font: font, fontSize: 8),
                       ),
                       pw.Text(
