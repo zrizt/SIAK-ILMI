@@ -1,7 +1,7 @@
 name: siak_ilmi
 description: Sistem Informasi Administrasi dan Keuangan Darul Ilmi - Mobile-first offline-first student administration and financial management system.
 publish_to: 'none'
-version: 1.1.0+1
+version: 1.1.1+2
 
 environment:
   sdk: '>=3.3.0 <4.0.0'

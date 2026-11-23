@@ -32,11 +32,37 @@ import 'tables/tarif_master_table.dart';
 
 part 'app_database.g.dart';
 
+/// Manages the active [AppDatabase] instance and hot-reload lifecycle.
+class DatabaseNotifier extends StateNotifier<AppDatabase> {
+  DatabaseNotifier(
+    super.initialDb, {
+    AppDatabase Function()? dbFactory,
+  }) : _dbFactory = dbFactory ?? (() => AppDatabase());
+
+  final AppDatabase Function() _dbFactory;
+
+  /// Closes the current database connection and opens a fresh one.
+  /// All dependent providers watching [appDatabaseProvider] will automatically update.
+  Future<void> reloadDatabase() async {
+    try {
+      await state.close();
+    } catch (_) {}
+    state = _dbFactory();
+  }
+}
+
+/// Provider managing the mutable state of the active [AppDatabase].
+final databaseNotifierProvider =
+    StateNotifierProvider<DatabaseNotifier, AppDatabase>((ref) {
+  return DatabaseNotifier(AppDatabase());
+});
+
 /// Global Riverpod provider for the [AppDatabase].
-/// Overridden at startup in [bootstrap()] with the real instance.
-final appDatabaseProvider = Provider<AppDatabase>(
-  (ref) => throw UnimplementedError('AppDatabase provider not initialized'),
-);
+/// Reads from [databaseNotifierProvider] so that when [DatabaseNotifier.reloadDatabase]
+/// is invoked, all dependent DAOs, services, and UI streams reactively reload.
+final appDatabaseProvider = Provider<AppDatabase>((ref) {
+  return ref.watch(databaseNotifierProvider);
+});
 
 @DriftDatabase(
   tables: [

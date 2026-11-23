@@ -6,6 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../core/config/supabase_config.dart';
+import '../../../core/database/app_database.dart';
+import '../../../core/database/daos/operator_dao.dart';
+import '../../../core/security/operator_service.dart';
 import '../data/backup_service.dart';
 import '../data/supabase_backup_adapter.dart';
 
@@ -146,7 +149,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
             const SizedBox(height: 8),
             const Text(
                 'Safety backup otomatis dibuat sebelum penimpaan. '
-                'Restart aplikasi diperlukan setelah restore berhasil.'),
+                'Data akan dimuat ulang secara otomatis tanpa perlu restart aplikasi.'),
           ],
         ),
         actions: [
@@ -170,6 +173,19 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
       final service = ref.read(backupServiceProvider);
       await service.restoreFromZip(zipPath);
 
+      // Hot reload database connection and reactively refresh all providers
+      await ref.read(databaseNotifierProvider.notifier).reloadDatabase();
+
+      // Refresh active operator session data if logged in
+      final currentOp = ref.read(activeOperatorProvider);
+      if (currentOp != null) {
+        final opDao = OperatorDao(ref.read(appDatabaseProvider));
+        final refreshedOp = await opDao.getById(currentOp.id);
+        if (refreshedOp != null && refreshedOp.isActive == 1) {
+          ref.read(activeOperatorProvider.notifier).state = refreshedOp;
+        }
+      }
+
       if (!mounted) return;
       setState(() => _isRestoring = false);
 
@@ -185,13 +201,13 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
             ],
           ),
           content: const Text(
-            'Database berhasil dipulihkan dari arsip backup.\n\n'
-            'Silakan restart aplikasi agar seluruh data termuat sepenuhnya.',
+            'Database berhasil dipulihkan dari arsip backup dan data telah dimuat ulang secara otomatis.\n\n'
+            'Aplikasi siap digunakan tanpa perlu restart atau login ulang.',
           ),
           actions: [
             FilledButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Tutup'),
+              child: const Text('OK'),
             ),
           ],
         ),

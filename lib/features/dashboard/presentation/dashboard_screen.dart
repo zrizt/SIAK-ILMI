@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/database/daos/operator_dao.dart';
 import '../../../core/database/daos/pembayaran_dao.dart';
 import '../../../core/database/daos/siswa_dao.dart';
 import '../../../core/database/daos/tagihan_dao.dart';
@@ -11,6 +12,7 @@ import '../../../core/security/operator_service.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../backup_restore/presentation/backup_restore_screen.dart';
 import '../../fee_management/presentation/fee_management_screen.dart';
+import '../../reports/presentation/export_excel_dialog.dart';
 import '../../settings/presentation/pin_auth_screen.dart';
 import '../../settings/presentation/settings_screen.dart';
 import '../../students/presentation/student_form_screen.dart';
@@ -188,6 +190,54 @@ class _DashboardTab extends ConsumerWidget {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Muat Ulang Database',
+            onPressed: () async {
+              final sm = ScaffoldMessenger.of(context);
+              sm.showSnackBar(
+                const SnackBar(
+                  content: Text('Memuat ulang database...'),
+                  duration: Duration(milliseconds: 800),
+                ),
+              );
+              try {
+                await ref
+                    .read(databaseNotifierProvider.notifier)
+                    .reloadDatabase();
+                ref.invalidate(dashboardMetricsProvider);
+                // Refresh operator session if logged in
+                final currentOp = ref.read(activeOperatorProvider);
+                if (currentOp != null) {
+                  final opDao = OperatorDao(ref.read(appDatabaseProvider));
+                  final refreshedOp = await opDao.getById(currentOp.id);
+                  if (refreshedOp != null && refreshedOp.isActive == 1) {
+                    ref.read(activeOperatorProvider.notifier).state =
+                        refreshedOp;
+                  }
+                }
+                sm.showSnackBar(
+                  const SnackBar(
+                    content: Text('Database berhasil dimuat ulang.'),
+                    backgroundColor: Colors.green,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              } catch (e) {
+                sm.showSnackBar(
+                  SnackBar(
+                    content: Text('Gagal memuat ulang database: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.table_view_outlined),
+            tooltip: 'Export Laporan Excel',
+            onPressed: () => ExportExcelDialog.show(context),
+          ),
+          IconButton(
             icon: const Icon(Icons.lock_outline),
             tooltip: 'Kunci Aplikasi',
             onPressed: () =>
@@ -211,7 +261,18 @@ class _DashboardTab extends ConsumerWidget {
         ),
       ),
       body: RefreshIndicator(
-        onRefresh: () async => ref.invalidate(dashboardMetricsProvider),
+        onRefresh: () async {
+          await ref.read(databaseNotifierProvider.notifier).reloadDatabase();
+          ref.invalidate(dashboardMetricsProvider);
+          final currentOp = ref.read(activeOperatorProvider);
+          if (currentOp != null) {
+            final opDao = OperatorDao(ref.read(appDatabaseProvider));
+            final refreshedOp = await opDao.getById(currentOp.id);
+            if (refreshedOp != null && refreshedOp.isActive == 1) {
+              ref.read(activeOperatorProvider.notifier).state = refreshedOp;
+            }
+          }
+        },
         child: metricsAsync.when(
           data: (m) => _DashboardBody(metrics: m, ref: ref),
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -382,7 +443,7 @@ class _DashboardBody extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Expanded(
               child: _ActionCard(
                 icon: Icons.backup,
@@ -392,6 +453,14 @@ class _DashboardBody extends StatelessWidget {
                   MaterialPageRoute(
                       builder: (_) => const BackupRestoreScreen()),
                 ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _ActionCard(
+                icon: Icons.table_view_rounded,
+                label: 'Export Excel',
+                onTap: () => ExportExcelDialog.show(context),
               ),
             ),
           ],

@@ -1,10 +1,10 @@
 # SIAK-ILMI: Autonomous Agent Progress & Task Tracker
 
-> **Document Version:** 1.7.2  
+> **Document Version:** 1.8.0  
 > **Target Specification:** [`/docs/PRD.md`](file:///d:/SIAK-ILMI/docs/PRD.md)  
-> **Last Updated:** 2026-11-20 00:23:00 +07:00  
+> **Last Updated:** 2026-11-23 21:25:00 +07:00  
 > **Project Root:** `d:\SIAK-ILMI`  
-> **Status:** Phase 12 Complete � Supabase Backup Migration (Drive Removed), 0 Analyzer Issues, 41/41 Tests Passing (100%)
+> **Status:** Phase 13 Complete — Hot Database Reload without Restart/Logout & Excel Financial Export Feature, 0 Analyzer Issues, 46/46 Tests Passing (100%)
 
 ---
 
@@ -16,9 +16,12 @@ The application is structured strictly under **Feature-First Clean Architecture*
 
 | Metric | Status | Notes |
 |---|---|---|
-| **Clean Architecture Files** | **78+ files** written | Complete separation of `core`, `features`, and `app` |
+| **Clean Architecture Files** | **83+ files** written | Complete separation of `core`, `features`, and `app` |
 | **Drift Schema & DAOs** | **13 tables, 7 DAOs** | Added `operator_account` table with optional `nip` & `OperatorDao` (schema v3), fully registered in `AppDatabase` |
-| **Domain Use Cases** | **6 core engines** | Auto-NIS, Tariff Resolver, Bill Engine, Atomic POS, Bulk Billing, Promote Students Engine |
+| **Domain Use Cases** | **7 core engines** | Auto-NIS, Tariff Resolver, Bill Engine, Atomic POS, Bulk Billing, Promote Students Engine, Excel Export Engine |
+| **Hot Database Reload** | **Complete (Phase 13)** | `DatabaseNotifier` hot-reloads SQLite connection after restore without app restart and without logging out the active operator |
+| **Home Refresh Action** | **Complete (Phase 13)** | AppBar refresh button & Pull-to-refresh on Home screen reloads database and invalidates metrics with live user feedback |
+| **Excel Financial Export** | **Complete (Phase 13)** | Professional multi-sheet Excel (.xlsx) export with School filters (SD/SMP/All) and Academic Year filters (All or Specific TA) |
 | **PPDB Import & Auto-Billing** | **Complete (Phase 9)** | Excel (.xlsx) & CSV import with pre-import validation, duplicate detection, and automated semester SPP generation |
 | **Bulk Semester Billing** | **Complete (Phase 9)** | Dedicated `BulkBillingScreen` & `BulkBillingUseCase` generating 6 monthly SPP charges for all active students with duplicate guard |
 | **Automatic Grade Promotion** | **Complete (Phase 10)** | `PromoteStudentsUseCase` & `GradePromotionScreen` with exception handling (Tinggal Kelas), graduation, and academic year transition |
@@ -29,10 +32,10 @@ The application is structured strictly under **Feature-First Clean Architecture*
 | **Batch POS Checklist** | **Complete (Phase 8)** | "Pilih Semua" / "Batal Semua" batch toolbar in POS Tab 1 |
 | **Dark / Light Mode** | **Complete (Phase 8)** | `ThemeModeNotifier` with SharedPreferences persistence; 3-way toggle in Settings |
 | **Modern UI Theme** | **Complete (Phase 8)** | Full M3 light + dark themes; deep Islamic green; flat-card design system |
-| **Cloud Backup Adapter** | **Complete & Fail-Silent** | `DriveBackupService` with `googleapis` Drive v3, account lifecycle (connect/disconnect/status), local restore, and backup list |
+| **Cloud Backup Adapter** | **Complete & Fail-Silent** | `SupabaseBackupService` with direct storage synchronization, local zip creation, and rollback safety backup |
 | **Auto-Lock Security** | **Complete & Reactive** | Dynamic 5-minute auto-lock listener in `AppShell` with gesture activity reset |
 | **Static Analysis (`flutter analyze`)**| **0 issues found** | Clean analyzer exit code 0; 0 errors, 0 warnings, 0 lints across entire project |
-| **Unit & Integration Tests (`flutter test`)**| **41/41 Passed (100%)** | 100% test pass rate across auto-NIS, bill engine, atomic POS, terbilang, operator service, bulk billing, semester helper, grade promotion, settings UI, PPDB parser, and backup/restore service |
+| **Unit & Integration Tests (`flutter test`)**| **46/46 Passed (100%)** | 100% test pass rate across auto-NIS, bill engine, atomic POS, terbilang, operator service, bulk billing, semester helper, grade promotion, settings UI, PPDB parser, backup/restore service, database hot reload, and Excel export engine |
 | **Native File Picker & PPDB Filter** | **Complete (Phase 11)** | Replaced manual path TextField with `FilePicker` and added admission status filter ('Lulus' imported vs 'Tidak Lulus' skipped) |
 | **PRD Compliance** | **100% compliant** | Follows all non-negotiable rules & formulas |
 
@@ -40,7 +43,7 @@ The application is structured strictly under **Feature-First Clean Architecture*
 
 ## 2. Completed Tasks (By Phase & Audit Hardening)
 
-### Phase 1: Project Setup & Database Layer ✅ (100%)
+### Phase 1: Project Setup & Database Layer âœ… (100%)
 - [x] **Project Scaffolding**: Structured Clean Architecture folders (`lib/src` / `lib/{app, core, features, shared}`).
 - [x] **Dependency Configuration (`pubspec.yaml`)**:
   - State: `flutter_riverpod: ^2.5.1`, `riverpod_annotation: ^2.3.5`
@@ -52,7 +55,7 @@ The application is structured strictly under **Feature-First Clean Architecture*
 - [x] **Drift SQLite DDL (12 Tables)**:
   - `sekolah_table.dart` (`sekolah` with `kode_sekolah` unique: 1=SD, 2=SMP)
   - `tahun_ajaran_table.dart` (`tahun_ajaran` with `nama_ta`, `is_aktif`)
-  - `kelas_table.dart` (`kelas` with `tingkat` 1–9)
+  - `kelas_table.dart` (`kelas` with `tingkat` 1â€“9)
   - `kategori_biaya_table.dart` (`kategori_biaya` with `tipe` 'Rutin'/'Sekali')
   - `siswa_table.dart` (`siswa` with unique `nis`, nullable `nisn`, status `AKTIF`/`LULUS`/`PINDAH`/`DROP_OUT`)
   - `tarif_master_table.dart` (`tarif_master` with `kategori_biaya_id`, `tingkat`, baseline `nominal`)
@@ -71,15 +74,15 @@ The application is structured strictly under **Feature-First Clean Architecture*
   - `audit_dao.dart`: Audit logging accessor.
   - `sekolah_dao.dart`: School list accessor and Riverpod `sekolahDaoProvider`.
 - [x] **Database Seeder (`database_seeder.dart`)**:
-  - Idempotent initial seed: 2 school entities, Academic Year 2026/2027, 9 classes (Grades 1–6 SD, 7–9 SMP), 3 fee categories (SPP, Infaq Gedung, Pendaftaran), baseline tariffs across all grades.
+  - Idempotent initial seed: 2 school entities, Academic Year 2026/2027, 9 classes (Grades 1â€“6 SD, 7â€“9 SMP), 3 fee categories (SPP, Infaq Gedung, Pendaftaran), baseline tariffs across all grades.
 
 ---
 
-### Phase 2: Domain Logic & Core Business Engines ✅ (100%)
+### Phase 2: Domain Logic & Core Business Engines âœ… (100%)
 - [x] **Auto-NIS Generator Engine (`auto_nis_generator_use_case.dart`)**:
   - Implements `[YY][SchoolCode][Sequence]` formula.
   - Generates zero-padded 3-digit sequence scoped by school and admission year.
-  - Enforces sequence ceiling limit (≤ 999).
+  - Enforces sequence ceiling limit (â‰¤ 999).
 - [x] **Tariff Resolver Engine (`tariff_resolver_use_case.dart`)**:
   - Implements 2-tier priority: `skema_pembayaran_siswa` (custom override) > `tarif_master` (standard rate).
 - [x] **Bill Generator Engine (`bill_generator_engine.dart`)**:
@@ -96,7 +99,7 @@ The application is structured strictly under **Feature-First Clean Architecture*
 
 ---
 
-### Phase 3: Presentation — Auth, Dashboard & Student Management ✅ (100%)
+### Phase 3: Presentation â€” Auth, Dashboard & Student Management âœ… (100%)
 - [x] **Security & Authentication**:
   - `pin_service.dart`: Salted SHA-256 local 6-digit PIN hashing. Admin vs Viewer (Kepala Sekolah) RBAC.
   - `pin_auth_screen.dart`: Visual 6-digit PIN pad with auto-lock timer, quick numpad, and shake on invalid attempt.
@@ -122,7 +125,7 @@ The application is structured strictly under **Feature-First Clean Architecture*
 
 ---
 
-### Phase 4: Presentation — Checklist POS & Payment Allocation ✅ (100%)
+### Phase 4: Presentation â€” Checklist POS & Payment Allocation âœ… (100%)
 - [x] **2-Tab Cashier Interface (`pos_checklist_screen.dart`)**:
   - **Tab 1 (Tagihan Belum Lunas):**
     - Interactive checkbox list of unpaid bills (`tagihan_item`).
@@ -142,7 +145,7 @@ The application is structured strictly under **Feature-First Clean Architecture*
 
 ---
 
-### Phase 5: Hardware & Output Adapters (PDF & ESC/POS) ✅ (100%)
+### Phase 5: Hardware & Output Adapters (PDF & ESC/POS) âœ… (100%)
 - [x] **Receipt Data Model (`receipt_model.dart`)**:
   - Typed `ReceiptModel` and `ReceiptLineItem` representations.
 - [x] **Receipt Model Factory (`receipt_model_factory.dart`)**:
@@ -158,7 +161,7 @@ The application is structured strictly under **Feature-First Clean Architecture*
 
 ---
 
-### Phase 6: Isolated Backup Module & Cloud Adapter ✅ (100% — Todo 6 Completed)
+### Phase 6: Isolated Backup Module & Cloud Adapter âœ… (100% â€” Todo 6 Completed)
 - [x] **Abstract Backup Service (`backup_service.dart`)**:
   - Decoupled `BackupService` interface with `performBackup()`, `getLocalBackupPath()`, and `restoreFromZip(zipPath)`.
   - Concrete `BackupServiceImpl` delegating cloud upload to `DriveBackupService` (resolved legacy TODO 6 placeholder).
@@ -191,12 +194,12 @@ The application is structured strictly under **Feature-First Clean Architecture*
 
 ---
 
-### Phase 8: Semester Billing, Batch POS, Dark Mode & Modern UI ✅ (100%) — 2026-11-07
+### Phase 8: Semester Billing, Batch POS, Dark Mode & Modern UI âœ… (100%) â€” 2026-11-07
 - [x] **Semester-Based SPP Billing (`generate_bill_screen.dart`)**:
   - Replaced single-month manual input with a segmented mode toggle: "Tagihan SPP Semester" vs "Tagihan Manual".
   - Semester mode auto-generates 6 monthly SPP bills per semester following Indonesian academic calendar:
-    - Semester 1 TA YYYY/YYYY+1 = Juli–Desember (months 7–12)
-    - Semester 2 TA YYYY/YYYY+1 = Januari–Juni of YYYY+1 (months 1–6)
+    - Semester 1 TA YYYY/YYYY+1 = Juliâ€“Desember (months 7â€“12)
+    - Semester 2 TA YYYY/YYYY+1 = Januariâ€“Juni of YYYY+1 (months 1â€“6)
   - Semester dropdown spans 3 academic years (previous, current, next) with smart default to active semester.
   - Each month remains a **separate `tagihan_siswa`** to preserve AC-05 partial installment tracking.
   - Manual mode retained for one-off fees (Infaq Gedung, Pendaftaran, etc.).
@@ -208,7 +211,7 @@ The application is structured strictly under **Feature-First Clean Architecture*
   - "Batal Semua" unchecks all items and clears all partial amounts.
   - Button label toggles dynamically based on current selection state.
 - [x] **Dark / Light Mode (`theme_provider.dart`, `app.dart`, `settings_screen.dart`)**:
-  - New `lib/core/theme/theme_provider.dart` — `ThemeModeNotifier` with `SharedPreferences` persistence.
+  - New `lib/core/theme/theme_provider.dart` â€” `ThemeModeNotifier` with `SharedPreferences` persistence.
   - `app.dart` wired to `themeModeProvider`; theme changes apply live without restart.
   - Settings screen: new "Tampilan" section with popup menu: Terang / Gelap / Ikut Sistem.
   - Theme choice survives app restarts.
@@ -218,11 +221,11 @@ The application is structured strictly under **Feature-First Clean Architecture*
   - Dark: `#0F1A0F` scaffold, `#1E2A1E` card surfaces, `#161E16` AppBar.
   - System overlay style adapts (white/dark status bar icons per theme).
   - Consistent `FilledButton`, `ChipTheme`, `ListTileTheme`, `DividerTheme` across both modes.
-  - Removed deprecated `CardTheme` → `CardThemeData`, removed `.withOpacity()`.
+  - Removed deprecated `CardTheme` â†’ `CardThemeData`, removed `.withOpacity()`.
 
 ---
 
-### Phase 9: Excel/CSV Import Preview, Bulk Billing, Formal Kwitansi & Operator Accounts ✅ (100%) — 2026-11-07
+### Phase 9: Excel/CSV Import Preview, Bulk Billing, Formal Kwitansi & Operator Accounts âœ… (100%) â€” 2026-11-07
 - [x] **Excel/CSV Import with Preview & PPDB Auto-Billing (`import_preview_screen.dart`, `student_repository.dart`)**:
   - `ImportPreviewScreen`: Full visual pre-import data inspector for `.xlsx` and `.csv` files.
   - Duplicate NISN detection against SQLite database with automatic skipping.
@@ -263,7 +266,7 @@ The application is structured strictly under **Feature-First Clean Architecture*
 
 ---
 
-### Phase 10: Automatic Grade Promotion & POS Bill Filtering ✅ (100%) — 2026-11-16
+### Phase 10: Automatic Grade Promotion & POS Bill Filtering âœ… (100%) â€” 2026-11-16
 - [x] **POS Bill Filtering per Semester & Tahun Ajaran (`pos_checklist_screen.dart`, `bill_semester_helper.dart`)**:
   - `BillSemesterHelper`: Utility extracting semester (Semester 1 / Semester 2 / Non-SPP) and academic year (TA) from bill item names according to the Indonesian academic calendar.
   - Interactive FilterChips in Tab 1 POS Cashier: "Semua", "Semester 1 (Ganjil)", "Semester 2 (Genap)", and "Non-SPP / Lainnya".
@@ -273,8 +276,8 @@ The application is structured strictly under **Feature-First Clean Architecture*
   - Friendly empty filter state with one-tap "Reset Filter" button.
 - [x] **Automatic Grade Promotion Engine (`promote_students_use_case.dart`)**:
   - `PromoteStudentsUseCase`: Automatically maps active students (`AKTIF`) to their next grade level:
-    - SD IT Baitul Akbar: Grade 1–5 $\rightarrow$ Grade 2–6 (`kelasId = targetKelas.id`); Grade 6 $\rightarrow$ status `'LULUS'`.
-    - SMP IT Darul Ilmi: Grade 7–8 $\rightarrow$ Grade 8–9 (`kelasId = targetKelas.id`); Grade 9 $\rightarrow$ status `'LULUS'`.
+    - SD IT Baitul Akbar: Grade 1â€“5 $\rightarrow$ Grade 2â€“6 (`kelasId = targetKelas.id`); Grade 6 $\rightarrow$ status `'LULUS'`.
+    - SMP IT Darul Ilmi: Grade 7â€“8 $\rightarrow$ Grade 8â€“9 (`kelasId = targetKelas.id`); Grade 9 $\rightarrow$ status `'LULUS'`.
   - Supports student retention exceptions ("Tinggal Kelas") which preserves the student's current grade while remaining active.
   - Atomic multi-table transition: updates student grades, graduates terminal grades, deactivates old `TahunAjaran` (`isAktif = 0`), and activates target new `TahunAjaran` (`isAktif = 1`).
   - Logs complete audit trail in local `audit_log` table with operator attribution.
@@ -294,7 +297,7 @@ The application is structured strictly under **Feature-First Clean Architecture*
 
 ---
 
-### Phase 11: Native File Picker & PPDB Admission Status Filtering ✅ (100%) — 2026-11-16
+### Phase 11: Native File Picker & PPDB Admission Status Filtering âœ… (100%) â€” 2026-11-16
 - [x] **Native File Picker (`student_list_screen.dart`, `file_picker: ^11.0.3`)**:
   - Replaced manual text field path input with direct file picking using `FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['xlsx', 'xls', 'csv'])`.
   - Added user feedback with selected filename and validation indicator.
@@ -316,7 +319,52 @@ The application is structured strictly under **Feature-First Clean Architecture*
 
 ---
 
-### Quality Assurance & Verification Suite ✅ (100%)
+### Phase 12: Supabase Storage Cloud Backup Adapter & Drive Removal ✅ (100%) — 2026-11-20
+- [x] **Direct Supabase Cloud Storage Integration (`supabase_backup_adapter.dart`)**:
+  - Replaced Google Drive v3 OAuth flow with direct public Supabase Storage upload/download.
+  - No client-side Google sign-in or account picker required.
+  - Automatic rollback guard and SHA-256 verification via `BackupManifest`.
+
+---
+
+### Phase 13: Hot Database Reload without Restart/Logout & Excel Export Engine ✅ (100%) — 2026-11-23
+- [x] **Hot Database Reload Engine (`app_database.dart`, `bootstrap.dart`)**:
+  - Replaced static `Provider<AppDatabase>` with reactive `databaseNotifierProvider` (`StateNotifierProvider<DatabaseNotifier, AppDatabase>`).
+  - Implemented `reloadDatabase()` on `DatabaseNotifier`: closes stale connection, instantiates fresh `AppDatabase` pointing to local `siak_ilmi.db`, and reactively updates all dependent Riverpod providers and stream listeners.
+  - Full backward compatibility maintained: `appDatabaseProvider` reads `ref.watch(databaseNotifierProvider)`.
+- [x] **Active User Session & Operator Preservation**:
+  - Hot database reloading explicitly preserves active operator (`activeOperatorProvider`) and authentication role (`authRoleProvider`). Users are NEVER logged out when refreshing or restoring.
+  - Automatically re-synchronizes active operator record against the newly reloaded database if an operator is logged in.
+- [x] **Home Screen Refresh Action & UI Feedback (`dashboard_screen.dart`)**:
+  - Added explicit Refresh `IconButton` (`Icons.refresh`) in the `AppBar.actions` of the Dashboard tab.
+  - Connected `RefreshIndicator.onRefresh` (pull-to-refresh) to hot-reload the database and invalidate metrics.
+  - Live snackbar user feedback: "Memuat ulang database..." followed by "Database berhasil dimuat ulang."
+- [x] **Backup & Restore Hot-Reload Integration (`backup_restore_screen.dart`)**:
+  - Integrated `reloadDatabase()` immediately after `restoreFromZip(zipPath)` completion.
+  - Updated dialog and warning copy confirming data has reloaded automatically without requiring an app restart or re-login.
+- [x] **Professional Excel (.xlsx) Financial & Billing Export Engine (`excel_export_service.dart`, `excel_export_options.dart`)**:
+  - Engineered high-performance multi-sheet Excel generator using `package:excel: ^4.0.3`.
+  - Generates 3 clean, human-readable, styled worksheets:
+    1. **Sheet 1 (`Ringkasan Laporan`)**: Executive financial summary with KPI cards (total students, gross bills, discounts/scholarships, net bills, cash received, arrears, and collection rate %), category breakdowns, and institutional comparison.
+    2. **Sheet 2 (`Rekap Tagihan Siswa`)**: Itemized student billing ledger with NIS, NISN, Nama, Sekolah, Kelas, Tahun Ajaran, Periode, Kategori Biaya, Tagihan Kotor, Diskon, Tagihan Bersih, Terbayar, Sisa, and color-coded status badges (LUNAS, SEBAGIAN, BELUM BAYAR), with summary totals row at bottom.
+    3. **Sheet 3 (`Riwayat Transaksi`)**: Chronological payment transaction log with No. Kuitansi (KW-YYYYMMDD-XXXX), date/time, student info, payment method (Tunai/Transfer), amount, cashier operator, status (VALID/VOID), and allocated items, with total valid payment row at bottom.
+  - Human-readable formatting: Dark Islamic Green theme (`#1B5E20`), bold headers, explicit column widths (`setColumnWidth`), center/right text alignment, and currency formatting.
+  - Supports flexible filtering:
+    - School Filter: Semua Sekolah, SD IT Baitul Akbar, or SMP IT Darul Ilmi.
+    - Academic Year Filter: Semua Tahun Ajaran or specific Tahun Ajaran (e.g. 2026/2027).
+- [x] **Excel Export Dialog UI & Navigation (`export_excel_dialog.dart`, `dashboard_screen.dart`, `settings_screen.dart`)**:
+  - Created modal `ExportExcelDialog` with ChoiceChips for school selection, dynamic Tahun Ajaran dropdown from SQLite, sheet preview card, and instant "Export & Bagikan Excel" CTA.
+  - Integrated native file sharing using `share_plus` (`Share.shareXFiles()`) for immediate WhatsApp sharing or local saving.
+  - Added entry points in Home Screen `AppBar.actions`, Home Quick Action card, and Settings screen under "Laporan & Export".
+- [x] **Testing & Static Analysis**:
+  - Added `test/unit/database_reload_test.dart` verifying `DatabaseNotifier.reloadDatabase()` and auth session preservation.
+  - Added `test/unit/excel_export_service_test.dart` verifying all 3 sheets, school filtering, and academic year filtering.
+  - **All 46/46 tests passing (100%)**.
+  - **`flutter analyze` reports "No issues found!" (exit code 0)**.
+
+---
+
+### Quality Assurance & Verification Suite âœ… (100%)
 - [x] `test/unit/auto_nis_generator_test.dart`: Validates AC-02 (NIS structure `[YY][SchoolCode][Sequence]`).
 - [x] `test/unit/bill_generator_engine_test.dart`: Validates AC-06 and PPDB wave discount calculations.
 - [x] `test/unit/process_payment_test.dart`: Validates AC-04 (multi-item atomic payment), AC-05 (partial payment allocation), and EC-02 (void transaction rollback).
@@ -384,84 +432,84 @@ All subagent tasks have resolved or concluded:
 
 ```
 d:\SIAK-ILMI\
-├── android/                             # Android native bootstrap & configurations
-│   ├── app/
-│   │   ├── build.gradle                 # MinSdk 24, multiDex, namespace configuration
-│   │   └── src/main/
-│   │       ├── AndroidManifest.xml      # Bluetooth, Storage, and Internet permissions
-│   │       ├── kotlin/com/darulilmi/siakilmi/MainActivity.kt
-│   │       └── res/                     # Splash & app styles
-│   ├── build.gradle
-│   ├── settings.gradle
-│   ├── gradle/wrapper/gradle-wrapper.properties
-│   └── local.properties.example        # Template for SDK paths
-├── assets/                              # Static app assets
-│   ├── fonts/
-│   └── images/
-├── docs/                                # Project Specifications
-│   ├── PRD.md                           # Authoritative Product Requirements Document
-│   ├── DATABASE_DESIGN.md
-│   └── ARCHITECTURE.md
-├── lib/
-│   ├── main.dart                        # Flutter entry point
-│   ├── app/
-│   │   ├── app.dart                     # MaterialApp.router, Indonesian locale, M3 theme
-│   │   ├── bootstrap.dart               # DB initialization and ProviderScope
-│   │   └── router.dart                  # Role-aware routing & reactive 5-min auto-lock PIN gate
-│   ├── core/
-│   │   ├── database/
-│   │   │   ├── app_database.dart        # Drift @DriftDatabase root with PRAGMA FK & WAL (All 6 DAOs registered)
-│   │   │   ├── database_seeder.dart     # Idempotent 2-school initial seeder
-│   │   │   ├── tables/                  # 12 SQLite Drift Tables
-│   │   │   └── daos/                    # 6 Data Access Objects (Siswa, Tagihan, Pembayaran, Tarif, Audit, Sekolah)
-│   │   ├── errors/app_exception.dart    # Sealed exception hierarchy (Nis, Overpayment, NotFound, Backup, Authorization, Validation)
-│   │   ├── formatters/currency_formatter.dart # Indonesian Rupiah formatting
-│   │   ├── security/pin_service.dart    # Salted SHA-256 PIN authentication with PinRole enum
-│   │   ├── services/
-│   │   │   ├── app_initializer.dart
-│   │   │   └── audit_logger_service.dart # Centralized SQLite audit trail with typed AuditAction
-│   │   ├── theme/
-│   │   │   ├── app_theme.dart           # Full M3 light & dark Islamic green theme (Phase 8)
-│   │   │   └── theme_provider.dart      # ThemeModeNotifier with SharedPreferences persistence (Phase 8)
-│   │   └── utils/
-│   │       ├── date_formatter.dart      # Indonesian date parser & receipt period generator
-│   │       └── input_validators.dart    # Static form & PIN validation rules
-│   └── features/
-│       ├── backup_restore/              # Local .zip compression & Drive backup contracts
-│       │   ├── data/
-│       │   │   ├── backup_service.dart  # Abstract BackupService contract + Local zip engine with WAL checkpointing
-│       │   │   └── drive_backup_adapter.dart # Google Drive v3 cloud sync adapter with WAL checkpointing
-│       │   └── presentation/
-│       │       └── backup_restore_screen.dart # Backup history & trigger UI
-│       ├── dashboard/                   # Executive Cash Inflow Dashboard & school filters
-│       ├── fee_management/              # Master tariffs, custom rates & bill snapshot generator
-│       ├── payments/                    # 2-tab POS Cashier & atomic payment execution
-│       ├── receipts/                    # ESC/POS Thermal, WhatsApp A5 PDF adapters & Factory
-│       ├── settings/                    # PIN authentication & system configuration
-│       └── students/                    # Auto-NIS generator, Dapodik parser, registry & bill generator
-│           ├── data/
-│           │   ├── dapodik_parser.dart  # .xlsx and .csv Dapodik import parser
-│           │   └── student_repository.dart # Student repository with reactive streams & bulk import
-│           ├── domain/
-│           │   ├── auto_nis_generator_use_case.dart
-│           │   └── student_providers.dart
-│           └── presentation/
-│               ├── generate_bill_screen.dart # Monthly fee bill creation screen
-│               ├── student_detail_screen.dart # Student profile card, custom rates, M3 status changer
-│               ├── student_form_screen.dart
-│               └── student_list_screen.dart # Student list with school filters and Dapodik import dialog
-├── test/
-│   ├── integration/
-│   │   └── offline_pos_flow_test.dart   # End-to-end integration tests (AC-01..05, EC-01..04)
-│   └── unit/
-│       ├── auto_nis_generator_test.dart # NIS formula unit tests
-│       ├── bill_generator_engine_test.dart # Hardcopy snapshotting & wave discount tests
-│       └── process_payment_test.dart    # Atomic transaction & void rollback tests
-├── analysis_options.yaml
-├── build.sh
-├── Makefile
-├── pubspec.yaml
-└── AGENTS.md                            # Comprehensive status & task tracking
+â”œâ”€â”€ android/                             # Android native bootstrap & configurations
+â”‚   â”œâ”€â”€ app/
+â”‚   â”‚   â”œâ”€â”€ build.gradle                 # MinSdk 24, multiDex, namespace configuration
+â”‚   â”‚   â””â”€â”€ src/main/
+â”‚   â”‚       â”œâ”€â”€ AndroidManifest.xml      # Bluetooth, Storage, and Internet permissions
+â”‚   â”‚       â”œâ”€â”€ kotlin/com/darulilmi/siakilmi/MainActivity.kt
+â”‚   â”‚       â””â”€â”€ res/                     # Splash & app styles
+â”‚   â”œâ”€â”€ build.gradle
+â”‚   â”œâ”€â”€ settings.gradle
+â”‚   â”œâ”€â”€ gradle/wrapper/gradle-wrapper.properties
+â”‚   â””â”€â”€ local.properties.example        # Template for SDK paths
+â”œâ”€â”€ assets/                              # Static app assets
+â”‚   â”œâ”€â”€ fonts/
+â”‚   â””â”€â”€ images/
+â”œâ”€â”€ docs/                                # Project Specifications
+â”‚   â”œâ”€â”€ PRD.md                           # Authoritative Product Requirements Document
+â”‚   â”œâ”€â”€ DATABASE_DESIGN.md
+â”‚   â””â”€â”€ ARCHITECTURE.md
+â”œâ”€â”€ lib/
+â”‚   â”œâ”€â”€ main.dart                        # Flutter entry point
+â”‚   â”œâ”€â”€ app/
+â”‚   â”‚   â”œâ”€â”€ app.dart                     # MaterialApp.router, Indonesian locale, M3 theme
+â”‚   â”‚   â”œâ”€â”€ bootstrap.dart               # DB initialization and ProviderScope
+â”‚   â”‚   â””â”€â”€ router.dart                  # Role-aware routing & reactive 5-min auto-lock PIN gate
+â”‚   â”œâ”€â”€ core/
+â”‚   â”‚   â”œâ”€â”€ database/
+â”‚   â”‚   â”‚   â”œâ”€â”€ app_database.dart        # Drift @DriftDatabase root with PRAGMA FK & WAL (All 6 DAOs registered)
+â”‚   â”‚   â”‚   â”œâ”€â”€ database_seeder.dart     # Idempotent 2-school initial seeder
+â”‚   â”‚   â”‚   â”œâ”€â”€ tables/                  # 12 SQLite Drift Tables
+â”‚   â”‚   â”‚   â””â”€â”€ daos/                    # 6 Data Access Objects (Siswa, Tagihan, Pembayaran, Tarif, Audit, Sekolah)
+â”‚   â”‚   â”œâ”€â”€ errors/app_exception.dart    # Sealed exception hierarchy (Nis, Overpayment, NotFound, Backup, Authorization, Validation)
+â”‚   â”‚   â”œâ”€â”€ formatters/currency_formatter.dart # Indonesian Rupiah formatting
+â”‚   â”‚   â”œâ”€â”€ security/pin_service.dart    # Salted SHA-256 PIN authentication with PinRole enum
+â”‚   â”‚   â”œâ”€â”€ services/
+â”‚   â”‚   â”‚   â”œâ”€â”€ app_initializer.dart
+â”‚   â”‚   â”‚   â””â”€â”€ audit_logger_service.dart # Centralized SQLite audit trail with typed AuditAction
+â”‚   â”‚   â”œâ”€â”€ theme/
+â”‚   â”‚   â”‚   â”œâ”€â”€ app_theme.dart           # Full M3 light & dark Islamic green theme (Phase 8)
+â”‚   â”‚   â”‚   â””â”€â”€ theme_provider.dart      # ThemeModeNotifier with SharedPreferences persistence (Phase 8)
+â”‚   â”‚   â””â”€â”€ utils/
+â”‚   â”‚       â”œâ”€â”€ date_formatter.dart      # Indonesian date parser & receipt period generator
+â”‚   â”‚       â””â”€â”€ input_validators.dart    # Static form & PIN validation rules
+â”‚   â””â”€â”€ features/
+â”‚       â”œâ”€â”€ backup_restore/              # Local .zip compression & Drive backup contracts
+â”‚       â”‚   â”œâ”€â”€ data/
+â”‚       â”‚   â”‚   â”œâ”€â”€ backup_service.dart  # Abstract BackupService contract + Local zip engine with WAL checkpointing
+â”‚       â”‚   â”‚   â””â”€â”€ drive_backup_adapter.dart # Google Drive v3 cloud sync adapter with WAL checkpointing
+â”‚       â”‚   â””â”€â”€ presentation/
+â”‚       â”‚       â””â”€â”€ backup_restore_screen.dart # Backup history & trigger UI
+â”‚       â”œâ”€â”€ dashboard/                   # Executive Cash Inflow Dashboard & school filters
+â”‚       â”œâ”€â”€ fee_management/              # Master tariffs, custom rates & bill snapshot generator
+â”‚       â”œâ”€â”€ payments/                    # 2-tab POS Cashier & atomic payment execution
+â”‚       â”œâ”€â”€ receipts/                    # ESC/POS Thermal, WhatsApp A5 PDF adapters & Factory
+â”‚       â”œâ”€â”€ settings/                    # PIN authentication & system configuration
+â”‚       â””â”€â”€ students/                    # Auto-NIS generator, Dapodik parser, registry & bill generator
+â”‚           â”œâ”€â”€ data/
+â”‚           â”‚   â”œâ”€â”€ dapodik_parser.dart  # .xlsx and .csv Dapodik import parser
+â”‚           â”‚   â””â”€â”€ student_repository.dart # Student repository with reactive streams & bulk import
+â”‚           â”œâ”€â”€ domain/
+â”‚           â”‚   â”œâ”€â”€ auto_nis_generator_use_case.dart
+â”‚           â”‚   â””â”€â”€ student_providers.dart
+â”‚           â””â”€â”€ presentation/
+â”‚               â”œâ”€â”€ generate_bill_screen.dart # Monthly fee bill creation screen
+â”‚               â”œâ”€â”€ student_detail_screen.dart # Student profile card, custom rates, M3 status changer
+â”‚               â”œâ”€â”€ student_form_screen.dart
+â”‚               â””â”€â”€ student_list_screen.dart # Student list with school filters and Dapodik import dialog
+â”œâ”€â”€ test/
+â”‚   â”œâ”€â”€ integration/
+â”‚   â”‚   â””â”€â”€ offline_pos_flow_test.dart   # End-to-end integration tests (AC-01..05, EC-01..04)
+â”‚   â””â”€â”€ unit/
+â”‚       â”œâ”€â”€ auto_nis_generator_test.dart # NIS formula unit tests
+â”‚       â”œâ”€â”€ bill_generator_engine_test.dart # Hardcopy snapshotting & wave discount tests
+â”‚       â””â”€â”€ process_payment_test.dart    # Atomic transaction & void rollback tests
+â”œâ”€â”€ analysis_options.yaml
+â”œâ”€â”€ build.sh
+â”œâ”€â”€ Makefile
+â”œâ”€â”€ pubspec.yaml
+â””â”€â”€ AGENTS.md                            # Comprehensive status & task tracking
 ```
 
 ---
@@ -470,16 +518,16 @@ d:\SIAK-ILMI\
 
 | Criteria / Protocol | Description | Implementation Status |
 |---|---|---|
-| **AC-01** | Zero-latency Offline POS Operations | **PASS** — 100% local Drift SQLite, verified in `offline_pos_flow_test.dart` |
-| **AC-02** | Auto-NIS Generation (`[YY][SchoolCode][Seq]`) | **PASS** — Covered in `AutoNisGeneratorUseCase` & unit/integration tests |
-| **AC-03** | Dapodik Excel/CSV Import & Deduplication | **PASS** — Covered in `DapodikParser` & `_showImportDialog` with NISN deduplication |
-| **AC-04** | Atomic Multi-Item Payments & Receipts | **PASS** — `ProcessPaymentUseCase` with `db.transaction()` |
-| **AC-05** | Real-Time Installment & Arrears Tracking | **PASS** — Interactive partial payments in `PosChecklistScreen` |
-| **AC-06** | PPDB Wave Discount Calculation | **PASS** — Evaluated in `BillGeneratorEngine` |
-| **AC-07** | Local Zip Backup Creation | **PASS** — Implemented in `BackupServiceImpl` & `DriveBackupService` with WAL checkpoint |
-| **EC-01** | Overpayment Prevention | **PASS** — Checked in POS UI & validated in domain engine |
-| **EC-02** | Payment Void & Reversal Rollback | **PASS** — Full rollback in `ProcessPaymentUseCase.voidTransaction()` |
-| **EC-03** | Zero-Network Airplane Mode Operations | **PASS** — All core engines run entirely on local SQLite |
-| **EC-04** | Historical Bill Snapshot Immutability | **PASS** — Static snapshotting into `tagihan_item` rows |
-| **EC-05** | Duplicate Student Import Rejection | **PASS** — Checked against existing NISN in DB |
-| **EC-06** | Fail-Silent Cloud Backup Fallback | **PASS** — Local zip always created; cloud error returned as data |
+| **AC-01** | Zero-latency Offline POS Operations | **PASS** â€” 100% local Drift SQLite, verified in `offline_pos_flow_test.dart` |
+| **AC-02** | Auto-NIS Generation (`[YY][SchoolCode][Seq]`) | **PASS** â€” Covered in `AutoNisGeneratorUseCase` & unit/integration tests |
+| **AC-03** | Dapodik Excel/CSV Import & Deduplication | **PASS** â€” Covered in `DapodikParser` & `_showImportDialog` with NISN deduplication |
+| **AC-04** | Atomic Multi-Item Payments & Receipts | **PASS** â€” `ProcessPaymentUseCase` with `db.transaction()` |
+| **AC-05** | Real-Time Installment & Arrears Tracking | **PASS** â€” Interactive partial payments in `PosChecklistScreen` |
+| **AC-06** | PPDB Wave Discount Calculation | **PASS** â€” Evaluated in `BillGeneratorEngine` |
+| **AC-07** | Local Zip Backup Creation | **PASS** â€” Implemented in `BackupServiceImpl` & `DriveBackupService` with WAL checkpoint |
+| **EC-01** | Overpayment Prevention | **PASS** â€” Checked in POS UI & validated in domain engine |
+| **EC-02** | Payment Void & Reversal Rollback | **PASS** â€” Full rollback in `ProcessPaymentUseCase.voidTransaction()` |
+| **EC-03** | Zero-Network Airplane Mode Operations | **PASS** â€” All core engines run entirely on local SQLite |
+| **EC-04** | Historical Bill Snapshot Immutability | **PASS** â€” Static snapshotting into `tagihan_item` rows |
+| **EC-05** | Duplicate Student Import Rejection | **PASS** â€” Checked against existing NISN in DB |
+| **EC-06** | Fail-Silent Cloud Backup Fallback | **PASS** â€” Local zip always created; cloud error returned as data |

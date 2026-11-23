@@ -7,6 +7,7 @@ import '../../../core/theme/theme_provider.dart';
 import '../../backup_restore/data/backup_service.dart';
 import '../../backup_restore/presentation/backup_restore_screen.dart';
 import '../../receipts/data/thermal_printer_adapter.dart';
+import '../../reports/presentation/export_excel_dialog.dart';
 import '../../students/presentation/grade_promotion_screen.dart';
 import 'operator_management_screen.dart';
 import 'pin_auth_screen.dart';
@@ -482,6 +483,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 builder: (_) => const BackupRestoreScreen(),
               ),
             ),
+          ),
+          const Divider(),
+
+          // ── Laporan & Export ─────────────────────────────────────
+          const _SectionHeader(title: 'Laporan & Export'),
+          ListTile(
+            leading: const Icon(Icons.table_view_rounded, color: Color(0xFF1B5E20)),
+            title: const Text('Export Laporan Excel (.xlsx)'),
+            subtitle: const Text('Unduh rekapitulasi keuangan, tagihan, dan pembayaran'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => ExportExcelDialog.show(context),
           ),
           const Divider(),
 
